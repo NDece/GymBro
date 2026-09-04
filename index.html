@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="it" class="dark h-full">
+<head>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ApexFit Studio - Fitness, Nutrizione & Progresso</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffaff',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+              accent: '#10b981',
+              purple: '#8b5cf6',
+              pink: '#ec4899'
+            },
+            darkbg: '#090d16',
+            darkcard: '#131b2e',
+            darkborder: '#1e293b'
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Chart.js for interactive analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
+  <style>
+    /* Safe Area Insets for iOS devices like iPhone 15 Pro */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      background-color: #090d16;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      touch-action: manipulation;
+    }
+    
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    
+    /* Pulse glow effect */
+    .glow-cyan {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+    }
+    
+    /* Hide spin buttons in number inputs */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="text-slate-100 flex flex-col h-screen overflow-hidden select-none">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-darkcard/90 backdrop-blur-md border-b border-darkborder px-4 py-3 flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center space-x-2">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-500 to-brand-accent flex items-center justify-center text-slate-950 font-black text-xl shadow-lg glow-cyan">
+        <i class="fa-solid fa-bolt"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">ApexFit</h1>
+        <span class="text-[10px] text-slate-400 tracking-wider font-semibold uppercase">Studio Pro</span>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <!-- Sync Status Indicator -->
+      <button id="cloud-sync-btn" onclick="openModal('cloud-modal')" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 flex items-center space-x-1.5 text-xs text-slate-300 transition">
+        <i id="sync-icon" class="fa-solid fa-cloud text-slate-400"></i>
+        <span id="sync-text" class="hidden sm:inline">Locale</span>
+      </button>
+      
+      <!-- Quick Rest Timer Button -->
+      <button onclick="toggleTimerModal()" class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 hover:border-cyan-500 flex items-center justify-center text-cyan-400 relative">
+        <i class="fa-solid fa-stopwatch"></i>
+        <span id="timer-badge" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Global Toast Notification Banner -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-800/95 border border-cyan-500/50 text-cyan-300 px-4 py-2.5 rounded-full text-xs font-semibold shadow-2xl flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-10px]">
+    <i id="toast-icon" class="fa-solid fa-info-circle"></i>
+    <span id="toast-msg">Messaggio di notifica</span>
+  </div>
+
+  <!-- Main Scrollable Area -->
+  <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
+    <!-- Google Sign-In / User Info -->
+    <div class="flex justify-center my-4">
+      <div id="g_id_onload" data-client_id="YOUR_GOOGLE_CLIENT_ID" data-auto_prompt="false"></div>
+      <div id="g_id_signin"></div>
+    </div>
+
+    <script>
+      // Set your Google OAuth Client ID here (replace before deploy)
+      const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID';
+
+      function onGoogleLoggedIn(response) {
+        const idToken = response.credential;
+        sessionStorage.setItem('google_id_token', idToken);
+        showToast('Accesso Google effettuato', 'success');
+        updateSyncStatus(true);
+      }
+
+      (function initGoogle() {
+        if (window.google && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
+          google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleLoggedIn });
+          google.accounts.id.renderButton(document.getElementById('g_id_signin'), { theme: 'outline', size: 'large' });
+        } else {
+          document.getElementById('g_id_signin').innerHTML = '<button onclick="openModal(\'cloud-modal\')" class="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300">Accedi con Google</button>';
+        }
+      })();
+
+      async function autoSaveToCloud(payload) {
+        const idToken = sessionStorage.getItem('google_id_token');
+        try {
+          const res = await fetch('/api/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': idToken ? `Bearer ${idToken}` : '' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error('Save failed');
+          showToast('Salvataggio cloud riuscito', 'success');
+          updateSyncStatus(true);
+          return await res.json();
+        } catch (err) {
+          showToast('Errore salvataggio cloud', 'error');
+          updateSyncStatus(false);
+          return null;
+        }
+      }
+
+      function showToast(msg) {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toast-msg');
+        toastMsg.textContent = msg;
+        toast.classList.remove('opacity-0','pointer-events-none');
+        setTimeout(()=>{ toast.classList.add('opacity-0','pointer-events-none'); }, 3000);
+      }
+
+      function updateSyncStatus(isCloud) {
+        const icon = document.getElementById('sync-icon');
+        const text = document.getElementById('sync-text');
+        if (isCloud) { icon.className = 'fa-solid fa-cloud-arrow-up text-cyan-400'; text.textContent = 'Cloud'; }
+        else { icon.className = 'fa-solid fa-cloud text-slate-400'; text.textContent = 'Locale'; }
+      }
+    </script>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: WORKOUT TRACKER                     -->
+    <!-- ========================================== -->
+    <section id="tab-workout" class="space-y-5 transition-all duration-300">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-dumbbell text-cyan-400"></i>
+            <span>Allenamento</span>
+          </h2>
+          <p class="text-xs text-slate-400">Traccia esercizi, serie e sovraccarico</p>
+        </div>
+        <button onclick="openModal('add-exercise-modal')" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-slate-950 font-bold text-xs flex items-center space-x-1.5 shadow-md glow-cyan transition">
+          <i class="fa-solid fa-plus text-sm"></i>
+          <span>Nuovo Esercizio</span>
+        </button>
+      </div>
+
+      <!-- Quick Date & Active Session Info -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 flex items-center justify-between shadow-lg">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-lg">
+            <i class="fa-solid fa-calendar-day"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Data Sessione</div>
+            <input type="date" id="workout-date" class="bg-transparent text-sm font-bold text-white focus:outline-none cursor-pointer" onchange="renderWorkouts()">
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-slate-400">Volume Totale</div>
+          <div id="daily-total-volume" class="text-sm font-extrabold text-cyan-400">0 kg</div>
+        </div>
+      </div>
+
+      <!-- Workout Exercises List -->
+      <div id="workout-list" class="space-y-4">
+        <!-- Rendered dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: NUTRITION & DIET TRACKER           -->
+    <!-- ========================================== -->
+    <section id="tab-nutrition" class="space-y-5 hidden transition-all duration-300">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-utensils text-emerald-400"></i>
+            <span>Alimentazione</span>
+          </h2>
+          <p class="text-xs text-slate-400">Dieta, Macronutrienti e Idratazione</p>
+        </div>
+        <div class="flex space-x-2">
+          <button onclick="openModal('food-preset-modal')" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center space-x-1">
+            <i class="fa-solid fa-book-bookmark text-amber-400"></i>
+            <span class="hidden sm:inline">Database</span>
+          </button>
+          <button onclick="openModal('add-food-modal')" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 shadow-md glow-emerald">
+            <i class="fa-solid fa-plus text-sm"></i>
+            <span>Cibo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Date selector for Diet -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-3 flex items-center justify-between">
+        <button onclick="shiftNutritionDate(-1)" class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white">
+          <i class="fa-solid fa-chevron-left text-xs"></i>
+        </button>
+        <div class="text-center">
+          <input type="date" id="nutrition-date" class="bg-transparent text-sm font-bold text-white text-center focus:outline-none cursor-pointer" onchange="renderNutrition()">
+        </div>
+        <button onclick="shiftNutritionDate(1)" class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white">
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Daily Macro Summary & Target Progress -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-4 shadow-lg">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+          <div>
+            <span class="text-xs text-slate-400">Calorie Totali</span>
+            <div class="text-2xl font-black text-emerald-400"><span id="summary-calories">0</span> <span class="text-xs font-normal text-slate-400">/ <span id="target-calories">2200</span> kcal</span></div>
+          </div>
+          <button onclick="openModal('target-modal')" class="text-xs text-cyan-400 hover:underline flex items-center space-x-1">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Imposta Target</span>
+          </button>
+        </div>
+
+        <!-- Macro Progress Bars -->
+        <div class="grid grid-cols-3 gap-3">
+          <!-- Protein -->
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="flex justify-between text-[11px] font-semibold mb-1">
+              <span class="text-rose-400">Proteine</span>
+              <span class="text-slate-400"><span id="summary-p">0</span>g</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-p" class="h-full bg-rose-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-p">150</span>g</div>
+          </div>
+
+          <!-- Carbs -->
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="flex justify-between text-[11px] font-semibold mb-1">
+              <span class="text-amber-400">Carbo</span>
+              <span class="text-slate-400"><span id="summary-c">0</span>g</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-c" class="h-full bg-amber-400 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-c">250</span>g</div>
+          </div>
+
+          <!-- Fats -->
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="flex justify-between text-[11px] font-semibold mb-1">
+              <span class="text-blue-400">Grassi</span>
+              <span class="text-slate-400"><span id="summary-f">0</span>g</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-f" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-f">70</span>g</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Water Tracker Card -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-950/60 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg">
+            <i class="fa-solid fa-glass-water"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Acqua Bevuta</div>
+            <div class="text-lg font-bold text-white"><span id="water-amount">0</span> <span class="text-xs text-slate-400">/ 2500 ml</span></div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="addWater(-250)" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-sm">-</button>
+          <button onclick="addWater(250)" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-1 shadow-md">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>250 ml</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Meals List by Category -->
+      <div id="meals-container" class="space-y-4">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: BODY METRICS & PROGRESS PHOTOS      -->
+    <!-- ========================================== -->
+    <section id="tab-body" class="space-y-5 hidden transition-all duration-300">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-ruler-horizontal text-purple-400"></i>
+            <span>Corpo & Misure</span>
+          </h2>
+          <p class="text-xs text-slate-400">Peso, circonferenze e foto progressi</p>
+        </div>
+        <button onclick="openModal('add-body-modal')" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 shadow-md">
+          <i class="fa-solid fa-plus text-sm"></i>
+          <span>Nuova Misura</span>
+        </button>
+      </div>
+
+      <!-- Health Indices Card (BMI & BMR) -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 grid grid-cols-2 gap-4 shadow-lg">
+        <div class="border-r border-slate-800 pr-2">
+          <div class="text-xs text-slate-400">Indice Massa (BMI)</div>
+          <div id="calc-bmi" class="text-xl font-extrabold text-purple-400">--</div>
+          <div id="calc-bmi-status" class="text-[10px] text-slate-500 font-medium">Inoltra prima i dati</div>
+        </div>
+        <div class="pl-2">
+          <div class="text-xs text-slate-400">Metabolismo Basale (BMR)</div>
+          <div id="calc-bmr" class="text-xl font-extrabold text-pink-400">-- <span class="text-xs font-normal text-slate-400">kcal</span></div>
+          <div class="text-[9px] text-slate-500">Stima Mifflin-St Jeor</div>
+        </div>
+      </div>
+
+      <!-- User Profile Specs for BMR -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-300">Dati Anagrafici per Calcoli</span>
+          <button onclick="openModal('profile-modal')" class="text-xs text-purple-400 hover:underline">Modifica</button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="bg-slate-900/60 p-2 rounded-xl">
+            <span class="text-[10px] text-slate-500 block">Sesso</span>
+            <span id="prof-gender" class="font-bold text-slate-200">Uomo</span>
+          </div>
+          <div class="bg-slate-900/60 p-2 rounded-xl">
+            <span class="text-[10px] text-slate-500 block">Età</span>
+            <span id="prof-age" class="font-bold text-slate-200">25 anni</span>
+          </div>
+          <div class="bg-slate-900/60 p-2 rounded-xl">
+            <span class="text-[10px] text-slate-500 block">Altezza</span>
+            <span id="prof-height" class="font-bold text-slate-200">175 cm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Body Metric History Logs -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-slate-300 flex items-center space-x-2">
+          <i class="fa-solid fa-clock-rotate-left text-slate-400"></i>
+          <span>Storico Misurazioni</span>
+        </h3>
+        <div id="body-logs-container" class="space-y-3">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Progress Photos Gallery -->
+      <div class="space-y-3 pt-2">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-slate-300 flex items-center space-x-2">
+            <i class="fa-solid fa-camera text-pink-400"></i>
+            <span>Galleria Foto Progressi</span>
+          </h3>
+          <label class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-pink-400 font-semibold cursor-pointer border border-slate-700">
+            <i class="fa-solid fa-upload mr-1"></i> Carica Foto
+            <input type="file" id="photo-upload-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+          </label>
+        </div>
+
+        <div id="photo-gallery" class="grid grid-cols-2 gap-3">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: ANALYTICS & CHARTS                  -->
+    <!-- ========================================== -->
+    <section id="tab-analytics" class="space-y-5 hidden transition-all duration-300">
+      <div>
+        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-chart-line text-cyan-400"></i>
+          <span>Andamento & Analytics</span>
+        </h2>
+        <p class="text-xs text-slate-400">Visualizza i tuoi progressi nel tempo</p>
+      </div>
+
+      <!-- Chart 1: Strength Progress / Overload -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-lg">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+            <i class="fa-solid fa-dumbbell text-cyan-400"></i>
+            <span>Progresso Forza / Volume</span>
+          </h3>
+          <select id="chart-exercise-select" class="bg-slate-900 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none" onchange="updateExerciseChart()">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        <div class="relative h-48 w-full">
+          <canvas id="exerciseProgressChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Body Weight History -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-lg">
+        <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+          <i class="fa-solid fa-weight-scale text-purple-400"></i>
+          <span>Andamento Peso Corporeo (kg)</span>
+        </h3>
+        <div class="relative h-48 w-full">
+          <canvas id="weightProgressChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Caloric & Macro intake vs Target -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-lg">
+        <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+          <i class="fa-solid fa-fire text-amber-400"></i>
+          <span>Apporto Calorico Ultimi 7 Giorni</span>
+        </h3>
+        <div class="relative h-48 w-full">
+          <canvas id="nutritionProgressChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: SETTINGS & BACKUP                   -->
+    <!-- ========================================== -->
+    <section id="tab-settings" class="space-y-5 hidden transition-all duration-300">
+      <div>
+        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-gear text-slate-400"></i>
+          <span>Impostazioni & Backup</span>
+        </h2>
+        <p class="text-xs text-slate-400">Gestisci i dati e le sincronizzazioni</p>
+      </div>
+
+      <!-- Cloud Status Box -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div id="cloud-status-icon" class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 text-lg">
+              <i class="fa-solid fa-user-slash"></i>
+            </div>
+            <div>
+              <div id="cloud-user-name" class="text-sm font-bold text-white">Utente Ospite</div>
+              <div id="cloud-user-status" class="text-xs text-slate-400">Salvataggio locale su browser</div>
+            </div>
+          </div>
+          <button onclick="openModal('cloud-modal')" class="px-3 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">
+            Account
+          </button>
+        </div>
+      </div>
+
+      <!-- Export & Import JSON Card -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-4 shadow-lg">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-file-export text-cyan-400"></i>
+            <span>Backup e Ripristino JSON</span>
+          </h3>
+          <p class="text-xs text-slate-400 mt-1">Esporta tutti i tuoi dati (esercizi, diete, misure e foto) in un singolo file JSON per sicurezza o trasferimento.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <button onclick="exportDataJSON()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-400 font-bold text-xs flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-download"></i>
+            <span>Esporta JSON</span>
+          </button>
+          
+          <label class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-400 font-bold text-xs flex items-center justify-center space-x-2 cursor-pointer">
+            <i class="fa-solid fa-upload"></i>
+            <span>Importa JSON</span>
+            <input type="file" id="import-json-file" accept=".json" class="hidden" onchange="importDataJSON(event)">
+          </label>
+        </div>
+      </div>
+
+      <!-- Reset Data Warning Zone -->
+      <div class="bg-red-950/20 border border-red-900/40 rounded-2xl p-4 space-y-2">
+        <h3 class="text-xs font-bold text-red-400 flex items-center space-x-1.5">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Zona Pericolosa</span>
+        </h3>
+        <p class="text-[11px] text-slate-400">Cancella definitivamente tutti i dati locali registrati.</p>
+        <button onclick="resetAllDataConfirm()" class="px-3 py-1.5 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-semibold text-xs transition">
+          Resetta Tutti i Dati
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Fixed Bottom Mobile Navigation Bar -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-darkcard/95 backdrop-blur-lg border-t border-darkborder py-2 px-3 z-40 max-w-lg mx-auto">
+    <div class="flex justify-around items-center">
+      <button onclick="switchTab('workout')" id="nav-workout" class="flex flex-col items-center space-y-1 text-cyan-400 transition">
+        <i class="fa-solid fa-dumbbell text-lg"></i>
+        <span class="text-[10px] font-bold">Palestra</span>
+      </button>
+
+      <button onclick="switchTab('nutrition')" id="nav-nutrition" class="flex flex-col items-center space-y-1 text-slate-400 transition">
+        <i class="fa-solid fa-utensils text-lg"></i>
+        <span class="text-[10px] font-bold">Dieta</span>
+      </button>
+
+      <button onclick="switchTab('body')" id="nav-body" class="flex flex-col items-center space-y-1 text-slate-400 transition">
+        <i class="fa-solid fa-ruler-horizontal text-lg"></i>
+        <span class="text-[10px] font-bold">Corpo</span>
+      </button>
+
+      <button onclick="switchTab('analytics')" id="nav-analytics" class="flex flex-col items-center space-y-1 text-slate-400 transition">
+        <i class="fa-solid fa-chart-line text-lg"></i>
+        <span class="text-[10px] font-bold">Grafici</span>
+      </button>
+
+      <button onclick="switchTab('settings')" id="nav-settings" class="flex flex-col items-center space-y-1 text-slate-400 transition">
+        <i class="fa-solid fa-gear text-lg"></i>
+        <span class="text-[10px] font-bold">Account</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MODAL: REST TIMER -->
+  <div id="modal-timer" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-darkcard border border-darkborder rounded-3xl p-6 w-full max-w-sm text-center space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-stopwatch text-cyan-400"></i>
+          <span>Timer Recupero</span>
+        </h3>
+        <button onclick="toggleTimerModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <!-- Display -->
+      <div id="timer-display" class="text-5xl font-black text-cyan-400 my-4 tracking-wider">01:30</div>
+
+      <!-- Quick Preset Seconds -->
+      <div class="grid grid-cols-4 gap-2">
+        <button onclick="setRestTimer(60)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">60s</button>
+        <button onclick="setRestTimer(90)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">90s</button>
+        <button onclick="setRestTimer(120)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">120s</button>
+        <button onclick="setRestTimer(180)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">180s</button>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex space-x-3 pt-2">
+        <button onclick="toggleTimerStart()" id="timer-start-btn" class="flex-1 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm">Avvia</button>
+        <button onclick="resetTimer()" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD EXERCISE LOG -->
+  <div id="add-exercise-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white">Aggiungi Esercizio</h3>
+        <button onclick="closeModal('add-exercise-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="add-exercise-form" onsubmit="saveExercise(event)" class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Nome Esercizio</label>
+          <input type="text" id="ex-name" required placeholder="Es. Panca Piana, Squat..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Categoria</label>
+            <select id="ex-category" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
+              <option value="Petto">Petto</option>
+              <option value="Dorso">Dorso</option>
+              <option value="Gambe">Gambe</option>
+              <option value="Spalle">Spalle</option>
+              <option value="Braccia">Braccia</option>
+              <option value="Core">Core</option>
+              <option value="Cardio">Cardio</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">RPE (Sforzo 1-10)</label>
+            <input type="number" id="ex-rpe" min="1" max="10" value="8" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Initial Set Data -->
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-slate-300 block">Prima Serie</span>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-1">Peso (kg)</label>
+              <input type="number" id="ex-weight" step="0.5" required placeholder="70" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-1">Ripetizioni</label>
+              <input type="number" id="ex-reps" required placeholder="10" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold text-sm shadow-lg glow-cyan">
+          Salva Esercizio
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD FOOD LOG -->
+  <div id="add-food-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white">Registra Alimento</h3>
+        <button onclick="closeModal('add-food-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <!-- Quick Preset Selector -->
+      <div id="preset-select-container" class="hidden space-y-1">
+        <label class="text-xs text-slate-400 block">Seleziona da Database Preset</label>
+        <select id="preset-select" class="w-full bg-slate-900 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none" onchange="applyPresetToForm()">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <form id="add-food-form" onsubmit="saveFoodLog(event)" class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Nome Cibo</label>
+          <input type="text" id="food-name" required placeholder="Es. Petto di pollo, Riso basmati..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Pasto</label>
+            <select id="food-meal" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
+              <option value="Colazione">Colazione</option>
+              <option value="Pranzo">Pranzo</option>
+              <option value="Cena">Cena</option>
+              <option value="Spuntino">Spuntino</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Quantità (grammi)</label>
+            <input type="number" id="food-grams" value="100" required oninput="recalcFoodMacros()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-slate-300 block">Valori Nutrizionali per la dose</span>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="text-[10px] text-rose-400 block mb-1">Proteine (g)</label>
+              <input type="number" id="food-p" step="0.1" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-amber-400 block mb-1">Carbo (g)</label>
+              <input type="number" id="food-c" step="0.1" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-blue-400 block mb-1">Grassi (g)</label>
+              <input type="number" id="food-f" step="0.1" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 font-bold text-sm shadow-lg glow-emerald">
+          Aggiungi al Diario
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: FOOD PRESET DATABASE -->
+  <div id="food-preset-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-book-bookmark text-amber-400"></i>
+          <span>Database Cibi salvati (per 100g)</span>
+        </h3>
+        <button onclick="closeModal('food-preset-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <!-- Add New Preset Form -->
+      <form onsubmit="saveFoodPreset(event)" class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+        <span class="text-xs font-bold text-amber-400 block">Crea Nuovo Preset Alimento</span>
+        <input type="text" id="preset-name" required placeholder="Nome Alimento (es. Fiocchi d'Avena)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white">
+        <div class="grid grid-cols-3 gap-2">
+          <input type="number" id="preset-p" step="0.1" required placeholder="Prot/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+          <input type="number" id="preset-c" step="0.1" required placeholder="Carb/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+          <input type="number" id="preset-f" step="0.1" required placeholder="Gras/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+        </div>
+        <button type="submit" class="w-full py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">Aggiungi a Libreria</button>
+      </form>
+
+      <!-- Preset List -->
+      <div id="presets-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TARGET NUTRITION -->
+  <div id="target-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-darkcard border border-darkborder rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white">Imposta Obiettivi Dieta</h3>
+        <button onclick="closeModal('target-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form onsubmit="saveTargets(event)" class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Target Calorie (kcal)</label>
+          <input type="number" id="target-input-kcal" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="text-[10px] text-rose-400 block mb-1">Proteine (g)</label>
+            <input type="number" id="target-input-p" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="text-[10px] text-amber-400 block mb-1">Carbo (g)</label>
+            <input type="number" id="target-input-c" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="text-[10px] text-blue-400 block mb-1">Grassi (g)</label>
+            <input type="number" id="target-input-f" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm">
+          Aggiorna Obiettivi
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD BODY LOG -->
+  <div id="add-body-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white">Nuova Misurazione Corpo</h3>
+        <button onclick="closeModal('add-body-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form onsubmit="saveBodyLog(event)" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Data</label>
+            <input type="date" id="body-date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Peso (kg)</label>
+            <input type="number" id="body-weight" step="0.1" required placeholder="75.5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Massa Grassa Stimata % (Opzionale)</label>
+          <input type="number" id="body-fat" step="0.1" placeholder="15.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+        </div>
+
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-slate-300 block">Circonferenze (cm) - Opzionali</span>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <input type="number" id="body-chest" step="0.5" placeholder="Petto cm" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            <input type="number" id="body-waist" step="0.5" placeholder="Vita cm" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            <input type="number" id="body-hips" step="0.5" placeholder="Fianchi cm" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            <input type="number" id="body-biceps" step="0.5" placeholder="Bicipite cm" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-slate-950 font-bold text-sm shadow-lg">
+          Salva Misurazione
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT PROFILE SPECS -->
+  <div id="profile-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-darkcard border border-darkborder rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white">Profilo & BMR</h3>
+        <button onclick="closeModal('profile-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form onsubmit="saveProfile(event)" class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Sesso Bio</label>
+          <select id="prof-input-gender" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            <option value="male">Uomo</option>
+            <option value="female">Donna</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Età</label>
+            <input type="number" id="prof-input-age" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Altezza (cm)</label>
+            <input type="number" id="prof-input-height" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold text-sm">
+          Salva Profilo
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CLOUD SYNC & AUTH -->
+  <div id="cloud-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-darkcard border border-darkborder rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl text-center">
+      <div class="w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-500/40 text-cyan-400 text-xl flex items-center justify-center mx-auto">
+        <i class="fa-solid fa-cloud"></i>
+      </div>
+
+<!-- INIZIO SEZIONE SINCRONIZZAZIONE CLOUD MODIFICATA -->
+<div id="cloud-section" style="padding: 15px; background: #f9f9f9; border-radius: 8px; margin-top: 10px;">
+    <h3>Sincronizzazione Cloud (Google Drive)</h3>
+    <p id="auth-status" style="color: #666; font-size: 0.9em;">Stato: Non connesso</p>
+    
+    <button id="authorize_button" onclick="handleAuthClick()" style="padding: 10px 15px; background: #4285F4; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; visibility: hidden;">
+        Accedi con Google
+    </button>
+
+    <div id="drive-actions" style="display: none; margin-top: 15px; gap: 10px; display: flex; flex-wrap: wrap;">
+        <button onclick="salvaSuDrive()" style="padding: 10px 15px; background: #34A853; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            💾 Salva Backup su Drive
+        </button>
+        <button onclick="caricaDaDrive()" style="padding: 10px 15px; background: #FBBC05; color: black; border: none; border-radius: 5px; cursor: pointer;">
+            📥 Carica Backup da Drive
+        </button>
+    </div>
+</div>
+<!-- FINE SEZIONE SINCRONIZZAZIONE CLOUD MODIFICATA -->
+
+      <button onclick="closeModal('cloud-modal')" class="text-xs text-slate-500 hover:text-slate-300">Chiudi</button>
+    </div>
+  </div>
+
+  <!-- Firebase Core Script Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Firebase App & DB Instances
+    let firebaseApp, db, auth;
+    let currentUser = null;
+
+    window.initFirebase = async function() {
+      try {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'apexfit-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        
+        if (!firebaseConfig) {
+          console.warn("Firebase config non presente. Funzionamento in sola modalità locale.");
+          return;
+        }
+
+        firebaseApp = initializeApp(firebaseConfig);
+        db = getFirestore(firebaseApp);
+        auth = getAuth(firebaseApp);
+
+        // Check for custom token or auth state
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        }
+
+        onAuthStateChanged(auth, (user) => {
+          currentUser = user;
+          updateAuthUI(user);
+          if (user) {
+            setupFirestoreRealtimeSync(appId, user.uid);
+          }
+        });
+
+      } catch (err) {
+        console.error("Errore inizializzazione Firebase:", err);
+      }
+    };
+
+    window.loginWithGoogle = async function() {
+      if (!auth) {
+        showToast("Cloud non disponibile al momento");
+        return;
+      }
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+        showToast("Accesso Cloud Eseguito!");
+        closeModal('cloud-modal');
+      } catch (err) {
+        console.error("Login Error:", err);
+        showToast("Errore durante l'accesso Google");
+      }
+    };
+
+    window.loginAnonymously = async function() {
+      if (!auth) return;
+      try {
+        await signInAnonymously(auth);
+        showToast("Connesso come Ospite Cloud!");
+        closeModal('cloud-modal');
+      } catch (err) {
+        showToast("Impossibile connettersi in cloud");
+      }
+    };
+
+    window.logoutCloud = async function() {
+      if (!auth) return;
+      await signOut(auth);
+      showToast("Disconnesso dal Cloud");
+      closeModal('cloud-modal');
+    };
+
+    function updateAuthUI(user) {
+      const syncIcon = document.getElementById('sync-icon');
+      const syncText = document.getElementById('sync-text');
+      const cloudIcon = document.getElementById('cloud-status-icon');
+      const cloudName = document.getElementById('cloud-user-name');
+      const cloudStatus = document.getElementById('cloud-user-status');
+      const authActions = document.getElementById('auth-actions');
+      const authDetails = document.getElementById('auth-user-details');
+      const authEmail = document.getElementById('auth-user-email');
+
+      if (user) {
+        syncIcon.className = 'fa-solid fa-cloud-check text-cyan-400';
+        syncText.textContent = 'Cloud Sync';
+        cloudIcon.className = 'w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/40 text-cyan-400 text-lg flex items-center justify-center';
+        cloudIcon.innerHTML = '<i class="fa-solid fa-cloud-check"></i>';
+        cloudName.textContent = user.displayName || 'Utente Sincronizzato';
+        cloudStatus.textContent = 'I tuoi dati sono protetti e sincronizzati';
+        authActions.classList.add('hidden');
+        authDetails.classList.remove('hidden');
+        authEmail.textContent = user.uid;
+      } else {
+        syncIcon.className = 'fa-solid fa-cloud text-slate-500';
+        syncText.textContent = 'Locale';
+        cloudIcon.className = 'w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-lg flex items-center justify-center';
+        cloudIcon.innerHTML = '<i class="fa-solid fa-user-slash"></i>';
+        cloudName.textContent = 'Utente Ospite';
+        cloudStatus.textContent = 'Salvataggio locale su browser';
+        authActions.classList.remove('hidden');
+        authDetails.classList.add('hidden');
+      }
+    }
+
+    // Firestore Realtime Synchronization (Rule 1 & Rule 2 compliant)
+    function setupFirestoreRealtimeSync(appId, userId) {
+      if (!db || !userId) return;
+      const docRef = doc(db, 'artifacts', appId, 'users', userId, 'user_data', 'fit_store');
+
+      onSnapshot(docRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const cloudData = snapshot.data();
+          if (cloudData && cloudData.payload) {
+            try {
+              const parsed = JSON.parse(cloudData.payload);
+              window.appState = parsed;
+              window.saveStateToLocal();
+              window.renderAllViews();
+            } catch (e) {
+              console.error("Sync parse error", e);
+            }
+          }
+        }
+      }, (error) => {
+        console.error("Firestore snapshot error:", error);
+      });
+    }
+
+    // Trigger Cloud Save Function
+    window.syncStateToCloud = async function() {
+      if (!currentUser || !db) return;
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'apexfit-app-id';
+      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'user_data', 'fit_store');
+      try {
+        await setDoc(docRef, {
+          payload: JSON.stringify(window.appState),
+          updatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Cloud Save Error:", err);
+      }
+    };
+
+    // Initialize Firebase on window load
+    window.addEventListener('load', () => {
+      window.initFirebase();
+    });
+  </script>
+
+  <script>
+    // Global Application State Default Structure
+    const DEFAULT_STATE = {
+      profile: { gender: 'male', age: 25, height: 175 },
+      targets: { calories: 2200, p: 150, c: 250, f: 70 },
+      workouts: [], // [{ id, date, name, category, rpe, sets: [{weight, reps}] }]
+      nutrition: [], // [{ id, date, meal, name, grams, p, c, f, kcal }]
+      water: {}, // { "YYYY-MM-DD": 1500 }
+      presets: [
+        { name: "Petto di Pollo (Cotto)", p: 31, c: 0, f: 3.6 },
+        { name: "Riso Basmati (Crudo)", p: 7, c: 78, f: 0.9 },
+        { name: "Fiocchi d'Avena", p: 13, c: 68, f: 7 },
+        { name: "Uova Intere", p: 13, c: 1, f: 10 }
+      ],
+      bodyMetrics: [], // [{ id, date, weight, bf, chest, waist, hips, biceps }]
+      photos: [] // [{ id, date, base64 }]
+    };
+
+    let appState = JSON.parse(localStorage.getItem('apexfit_data')) || DEFAULT_STATE;
+    window.appState = appState;
+
+    // Save State locally and sync to cloud if available
+    window.saveStateToLocal = function() {
+      localStorage.setItem('apexfit_data', JSON.stringify(appState));
+      if (window.syncStateToCloud) {
+        window.syncStateToCloud();
+      }
+    };
+
+    // Initialize Date Controls & Views
+    document.addEventListener('DOMContentLoaded', () => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById('workout-date').value = todayStr;
+      document.getElementById('nutrition-date').value = todayStr;
+      document.getElementById('body-date').value = todayStr;
+
+      loadProfileUI();
+      loadTargetsUI();
+      renderAllViews();
+    });
+
+    function renderAllViews() {
+      renderWorkouts();
+      renderNutrition();
+      renderBodyMetrics();
+      renderPhotos();
+      renderPresets();
+      updateAnalyticsCharts();
+    }
+
+    // UI Tab Navigation Switcher
+    function switchTab(tabName) {
+      const tabs = ['workout', 'nutrition', 'body', 'analytics', 'settings'];
+      tabs.forEach(t => {
+        const section = document.getElementById(`tab-${t}`);
+        const navBtn = document.getElementById(`nav-${t}`);
+        if (t === tabName) {
+          section.classList.remove('hidden');
+          navBtn.classList.remove('text-slate-400');
+          navBtn.classList.add('text-cyan-400');
+        } else {
+          section.classList.add('hidden');
+          navBtn.classList.remove('text-cyan-400');
+          navBtn.classList.add('text-slate-400');
+        }
+      });
+      if (tabName === 'analytics') {
+        updateAnalyticsCharts();
+      }
+    }
+
+    // Modal Display Logic
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.remove('hidden');
+    }
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    // Toast Notification System
+    function showToast(msg, icon = 'fa-info-circle') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast-icon').className = `fa-solid ${icon}`;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+      }, 2500);
+    }
+
+    // ----------------------------------------------------
+    // WORKOUT LOGIC
+    // ----------------------------------------------------
+    function saveExercise(e) {
+      e.preventDefault();
+      const date = document.getElementById('workout-date').value;
+      const name = document.getElementById('ex-name').value.trim();
+      const category = document.getElementById('ex-category').value;
+      const rpe = parseFloat(document.getElementById('ex-rpe').value) || 8;
+      const weight = parseFloat(document.getElementById('ex-weight').value) || 0;
+      const reps = parseInt(document.getElementById('ex-reps').value) || 0;
+
+      const newEx = {
+        id: 'ex_' + Date.now(),
+        date: date,
+        name: name,
+        category: category,
+        rpe: rpe,
+        sets: [{ weight, reps }]
+      };
+
+      appState.workouts.push(newEx);
+      saveStateToLocal();
+      closeModal('add-exercise-modal');
+      document.getElementById('add-exercise-form').reset();
+      renderWorkouts();
+      showToast('Esercizio aggiunto!', 'fa-dumbbell');
+    }
+
+    function addSetToExercise(exId) {
+      const ex = appState.workouts.find(w => w.id === exId);
+      if (!ex) return;
+      const lastSet = ex.sets[ex.sets.length - 1] || { weight: 50, reps: 10 };
+      ex.sets.push({ weight: lastSet.weight, reps: lastSet.reps });
+      saveStateToLocal();
+      renderWorkouts();
+    }
+
+    function updateSet(exId, index, field, value) {
+      const ex = appState.workouts.find(w => w.id === exId);
+      if (!ex || !ex.sets[index]) return;
+      ex.sets[index][field] = parseFloat(value) || 0;
+      saveStateToLocal();
+      renderWorkouts();
+    }
+
+    function removeSet(exId, index) {
+      const ex = appState.workouts.find(w => w.id === exId);
+      if (!ex) return;
+      ex.sets.splice(index, 1);
+      if (ex.sets.length === 0) {
+        appState.workouts = appState.workouts.filter(w => w.id !== exId);
+      }
+      saveStateToLocal();
+      renderWorkouts();
+    }
+
+    function deleteExercise(exId) {
+      appState.workouts = appState.workouts.filter(w => w.id !== exId);
+      saveStateToLocal();
+      renderWorkouts();
+      showToast('Esercizio rimosso');
+    }
+
+    function renderWorkouts() {
+      const selectedDate = document.getElementById('workout-date').value;
+      const container = document.getElementById('workout-list');
+      container.innerHTML = '';
+
+      const dayWorkouts = appState.workouts.filter(w => w.date === selectedDate);
+      let dayVolume = 0;
+
+      if (dayWorkouts.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 bg-darkcard/50 rounded-2xl border border-dashed border-slate-800">
+            <i class="fa-solid fa-dumbbell text-3xl text-slate-600 mb-2"></i>
+            <p class="text-xs text-slate-400">Nessun esercizio per questa data.</p>
+            <button onclick="openModal('add-exercise-modal')" class="mt-3 text-xs text-cyan-400 font-bold hover:underline">+ Aggiungi Esercizio</button>
+          </div>
+        `;
+      }
+
+      dayWorkouts.forEach(ex => {
+        let exVolume = 0;
+        let maxWeight = 0;
+        ex.sets.forEach(s => {
+          exVolume += (s.weight * s.reps);
+          if (s.weight > maxWeight) maxWeight = s.weight;
+        });
+        dayVolume += exVolume;
+
+        // Estimated 1RM using Epley Formula: 1RM = weight * (1 + reps/30)
+        const topSet = ex.sets[0] || { weight: 0, reps: 0 };
+        const est1RM = Math.round(topSet.weight * (1 + topSet.reps / 30));
+
+        const card = document.createElement('div');
+        card.className = "bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-md";
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold text-white">${ex.name}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-400 font-semibold border border-cyan-800/50">${ex.category}</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5">
+                Vol: <span class="text-cyan-400 font-bold">${exVolume} kg</span> | 1RM stima: <span class="text-emerald-400 font-bold">${est1RM} kg</span> | RPE: ${ex.rpe}
+              </div>
+            </div>
+            <button onclick="deleteExercise('${ex.id}')" class="text-slate-500 hover:text-rose-400 text-xs p-1">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+
+          <!-- Sets List -->
+          <div class="space-y-2 pt-1">
+            ${ex.sets.map((s, idx) => `
+              <div class="flex items-center justify-between bg-slate-900/60 p-2 rounded-xl border border-slate-800/80 text-xs">
+                <span class="w-12 font-bold text-slate-400 text-[11px]">Set ${idx + 1}</span>
+                <div class="flex items-center space-x-2">
+                  <input type="number" value="${s.weight}" step="0.5" onchange="updateSet('${ex.id}', ${idx}, 'weight', this.value)" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center font-semibold text-white">
+                  <span class="text-slate-500 text-[10px]">kg</span>
+                  <span class="text-slate-500 font-bold">×</span>
+                  <input type="number" value="${s.reps}" onchange="updateSet('${ex.id}', ${idx}, 'reps', this.value)" class="w-14 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center font-semibold text-white">
+                  <span class="text-slate-500 text-[10px]">reps</span>
+                </div>
+                <button onclick="removeSet('${ex.id}', ${idx})" class="text-slate-600 hover:text-red-400 px-1">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="flex justify-between items-center pt-1">
+            <button onclick="addSetToExercise('${ex.id}')" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center space-x-1">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>Aggiungi Serie</span>
+            </button>
+            <button onclick="setRestTimer(90); toggleTimerModal();" class="text-[11px] text-slate-400 hover:text-white flex items-center space-x-1">
+              <i class="fa-solid fa-stopwatch text-cyan-400"></i>
+              <span>Timer 90s</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      document.getElementById('daily-total-volume').textContent = `${dayVolume} kg`;
+    }
+
+    // ----------------------------------------------------
+    // REST TIMER LOGIC
+    // ----------------------------------------------------
+    let timerInterval = null;
+    let timerSeconds = 90;
+    let timerRunning = false;
+
+    function setRestTimer(sec) {
+      timerSeconds = sec;
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+      const s = (timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timer-display').textContent = `${m}:${s}`;
+    }
+
+    function toggleTimerStart() {
+      const btn = document.getElementById('timer-start-btn');
+      if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        btn.textContent = 'Avvia';
+        btn.className = "flex-1 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm";
+      } else {
+        timerRunning = true;
+        btn.textContent = 'Pausa';
+        btn.className = "flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm";
+        document.getElementById('timer-badge').classList.remove('hidden');
+
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            btn.textContent = 'Completato!';
+            document.getElementById('timer-badge').classList.add('hidden');
+            playTimerSound();
+            showToast('Tempo di recupero terminato!', 'fa-bell');
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      timerSeconds = 90;
+      updateTimerDisplay();
+      document.getElementById('timer-badge').classList.add('hidden');
+      document.getElementById('timer-start-btn').textContent = 'Avvia';
+    }
+
+    function toggleTimerModal() {
+      const modal = document.getElementById('modal-timer');
+      if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        updateTimerDisplay();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function playTimerSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.3;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } catch (e) {
+        console.log("Audio Web API restricted");
+      }
+    }
+
+    // ----------------------------------------------------
+    // NUTRITION LOGIC
+    // ----------------------------------------------------
+    function shiftNutritionDate(days) {
+      const input = document.getElementById('nutrition-date');
+      const cur = new Date(input.value);
+      cur.setDate(cur.getDate() + days);
+      input.value = cur.toISOString().split('T')[0];
+      renderNutrition();
+    }
+
+    function saveFoodLog(e) {
+      e.preventDefault();
+      const date = document.getElementById('nutrition-date').value;
+      const name = document.getElementById('food-name').value.trim();
+      const meal = document.getElementById('food-meal').value;
+      const grams = parseFloat(document.getElementById('food-grams').value) || 100;
+      const p = parseFloat(document.getElementById('food-p').value) || 0;
+      const c = parseFloat(document.getElementById('food-c').value) || 0;
+      const f = parseFloat(document.getElementById('food-f').value) || 0;
+
+      // 4 kcal per Prot & Carbs, 9 kcal per Fat
+      const kcal = Math.round((p * 4) + (c * 4) + (f * 9));
+
+      const newLog = {
+        id: 'food_' + Date.now(),
+        date, name, meal, grams, p, c, f, kcal
+      };
+
+      appState.nutrition.push(newLog);
+      saveStateToLocal();
+      closeModal('add-food-modal');
+      document.getElementById('add-food-form').reset();
+      renderNutrition();
+      showToast('Cibo registrato nel diario!', 'fa-utensils');
+    }
+
+    function deleteFoodLog(id) {
+      appState.nutrition = appState.nutrition.filter(n => n.id !== id);
+      saveStateToLocal();
+      renderNutrition();
+      showToast('Alimento rimosso');
+    }
+
+    function addWater(amountMs) {
+      const date = document.getElementById('nutrition-date').value;
+      const current = appState.water[date] || 0;
+      const updated = Math.max(0, current + amountMs);
+      appState.water[date] = updated;
+      saveStateToLocal();
+      renderNutrition();
+    }
+
+    function renderNutrition() {
+      const selectedDate = document.getElementById('nutrition-date').value;
+      const container = document.getElementById('meals-container');
+      container.innerHTML = '';
+
+      const dayLogs = appState.nutrition.filter(n => n.date === selectedDate);
+
+      // Water UI
+      const waterVal = appState.water[selectedDate] || 0;
+      document.getElementById('water-amount').textContent = waterVal;
+
+      // Calculate Day Totals
+      let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0;
+      dayLogs.forEach(l => {
+        totalKcal += l.kcal;
+        totalP += l.p;
+        totalC += l.c;
+        totalF += l.f;
+      });
+
+      // Update Summary Cards
+      document.getElementById('summary-calories').textContent = totalKcal;
+      document.getElementById('summary-p').textContent = Math.round(totalP);
+      document.getElementById('summary-c').textContent = Math.round(totalC);
+      document.getElementById('summary-f').textContent = Math.round(totalF);
+
+      // Progress bars percentage
+      const target = appState.targets;
+      document.getElementById('bar-p').style.width = `${Math.min(100, (totalP / target.p) * 100)}%`;
+      document.getElementById('bar-c').style.width = `${Math.min(100, (totalC / target.c) * 100)}%`;
+      document.getElementById('bar-f').style.width = `${Math.min(100, (totalF / target.f) * 100)}%`;
+
+      // Meal Groupings
+      const meals = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
+      meals.forEach(mealType => {
+        const mealLogs = dayLogs.filter(l => l.meal === mealType);
+        let mealKcal = 0;
+        mealLogs.forEach(l => mealKcal += l.kcal);
+
+        const card = document.createElement('div');
+        card.className = "bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3";
+        card.innerHTML = `
+          <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+            <span class="text-sm font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-circle-dot text-[10px] text-emerald-400"></i>
+              <span>${mealType}</span>
+            </span>
+            <span class="text-xs font-semibold text-emerald-400">${mealKcal} kcal</span>
+          </div>
+
+          <div class="space-y-2">
+            ${mealLogs.length === 0 ? `<div class="text-[11px] text-slate-500 italic">Nessun alimento.</div>` : ''}
+            ${mealLogs.map(l => `
+              <div class="flex items-center justify-between text-xs bg-slate-900/40 p-2 rounded-xl border border-slate-800/60">
+                <div>
+                  <div class="font-bold text-slate-200">${l.name} <span class="text-[10px] text-slate-400 font-normal">(${l.grams}g)</span></div>
+                  <div class="text-[10px] text-slate-400">P: ${l.p}g | C: ${l.c}g | G: ${l.f}g</div>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-slate-300">${l.kcal} kcal</span>
+                  <button onclick="deleteFoodLog('${l.id}')" class="text-slate-600 hover:text-red-400">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ----------------------------------------------------
+    // FOOD PRESETS LOGIC
+    // ----------------------------------------------------
+    function saveFoodPreset(e) {
+      e.preventDefault();
+      const name = document.getElementById('preset-name').value.trim();
+      const p = parseFloat(document.getElementById('preset-p').value) || 0;
+      const c = parseFloat(document.getElementById('preset-c').value) || 0;
+      const f = parseFloat(document.getElementById('preset-f').value) || 0;
+
+      appState.presets.push({ name, p, c, f });
+      saveStateToLocal();
+      renderPresets();
+      document.getElementById('preset-name').value = '';
+      showToast('Preset salvato nella libreria!', 'fa-bookmark');
+    }
+
+    function deletePreset(index) {
+      appState.presets.splice(index, 1);
+      saveStateToLocal();
+      renderPresets();
+    }
+
+    function renderPresets() {
+      const list = document.getElementById('presets-list');
+      const selectContainer = document.getElementById('preset-select-container');
+      const select = document.getElementById('preset-select');
+      list.innerHTML = '';
+      select.innerHTML = '<option value="">-- Seleziona un Preset --</option>';
+
+      if (appState.presets.length > 0) {
+        selectContainer.classList.remove('hidden');
+      } else {
+        selectContainer.classList.add('hidden');
+      }
+
+      appState.presets.forEach((p, idx) => {
+        // Render List item in modal
+        const item = document.createElement('div');
+        item.className = "flex justify-between items-center bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs";
+        item.innerHTML = `
+          <div>
+            <div class="font-bold text-slate-200">${p.name}</div>
+            <div class="text-[10px] text-slate-400">Per 100g: P: ${p.p}g | C: ${p.c}g | G: ${p.f}g</div>
+          </div>
+          <button onclick="deletePreset(${idx})" class="text-slate-600 hover:text-red-400 text-xs p-1">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        `;
+        list.appendChild(item);
+
+        // Populate dropdown options
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `${p.name} (P:${p.p} C:${p.c} G:${p.f})`;
+        select.appendChild(opt);
+      });
+    }
+
+    function applyPresetToForm() {
+      const idx = document.getElementById('preset-select').value;
+      if (idx === "") return;
+      const p = appState.presets[idx];
+      if (!p) return;
+
+      document.getElementById('food-name').value = p.name;
+      recalcFoodMacros();
+    }
+
+    function recalcFoodMacros() {
+      const idx = document.getElementById('preset-select').value;
+      const grams = parseFloat(document.getElementById('food-grams').value) || 100;
+      if (idx !== "" && appState.presets[idx]) {
+        const p = appState.presets[idx];
+        const ratio = grams / 100;
+        document.getElementById('food-p').value = (p.p * ratio).toFixed(1);
+        document.getElementById('food-c').value = (p.c * ratio).toFixed(1);
+        document.getElementById('food-f').value = (p.f * ratio).toFixed(1);
+      }
+    }
+
+    function saveTargets(e) {
+      e.preventDefault();
+      appState.targets = {
+        calories: parseInt(document.getElementById('target-input-kcal').value) || 2000,
+        p: parseInt(document.getElementById('target-input-p').value) || 150,
+        c: parseInt(document.getElementById('target-input-c').value) || 200,
+        f: parseInt(document.getElementById('target-input-f').value) || 60
+      };
+      saveStateToLocal();
+      loadTargetsUI();
+      renderNutrition();
+      closeModal('target-modal');
+      showToast('Obiettivi aggiornati!');
+    }
+
+    function loadTargetsUI() {
+      const t = appState.targets;
+      document.getElementById('target-calories').textContent = t.calories;
+      document.getElementById('target-p').textContent = t.p;
+      document.getElementById('target-c').textContent = t.c;
+      document.getElementById('target-f').textContent = t.f;
+
+      document.getElementById('target-input-kcal').value = t.calories;
+      document.getElementById('target-input-p').value = t.p;
+      document.getElementById('target-input-c').value = t.c;
+      document.getElementById('target-input-f').value = t.f;
+    }
+
+    // ----------------------------------------------------
+    // BODY METRICS & PHOTOS LOGIC
+    // ----------------------------------------------------
+    function saveProfile(e) {
+      e.preventDefault();
+      appState.profile = {
+        gender: document.getElementById('prof-input-gender').value,
+        age: parseInt(document.getElementById('prof-input-age').value) || 25,
+        height: parseInt(document.getElementById('prof-input-height').value) || 175
+      };
+      saveStateToLocal();
+      loadProfileUI();
+      renderBodyMetrics();
+      closeModal('profile-modal');
+      showToast('Profilo salvato!');
+    }
+
+    function loadProfileUI() {
+      const p = appState.profile;
+      document.getElementById('prof-gender').textContent = p.gender === 'male' ? 'Uomo' : 'Donna';
+      document.getElementById('prof-age').textContent = `${p.age} anni`;
+      document.getElementById('prof-height').textContent = `${p.height} cm`;
+
+      document.getElementById('prof-input-gender').value = p.gender;
+      document.getElementById('prof-input-age').value = p.age;
+      document.getElementById('prof-input-height').value = p.height;
+    }
+
+    function saveBodyLog(e) {
+      e.preventDefault();
+      const date = document.getElementById('body-date').value;
+      const weight = parseFloat(document.getElementById('body-weight').value) || 0;
+      const bf = parseFloat(document.getElementById('body-fat').value) || null;
+      const chest = parseFloat(document.getElementById('body-chest').value) || null;
+      const waist = parseFloat(document.getElementById('body-waist').value) || null;
+      const hips = parseFloat(document.getElementById('body-hips').value) || null;
+      const biceps = parseFloat(document.getElementById('body-biceps').value) || null;
+
+      const newLog = { id: 'body_' + Date.now(), date, weight, bf, chest, waist, hips, biceps };
+      appState.bodyMetrics.push(newLog);
+      // Sort logs chronologically
+      appState.bodyMetrics.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      saveStateToLocal();
+      closeModal('add-body-modal');
+      renderBodyMetrics();
+      showToast('Misura salvata!', 'fa-ruler-horizontal');
+    }
+
+    function deleteBodyLog(id) {
+      appState.bodyMetrics = appState.bodyMetrics.filter(b => b.id !== id);
+      saveStateToLocal();
+      renderBodyMetrics();
+      showToast('Misurazione rimossa');
+    }
+
+    function renderBodyMetrics() {
+      const container = document.getElementById('body-logs-container');
+      container.innerHTML = '';
+
+      if (appState.bodyMetrics.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-500 italic">Nessuna misurazione registrata.</div>`;
+        document.getElementById('calc-bmi').textContent = '--';
+        document.getElementById('calc-bmr').textContent = '--';
+        return;
+      }
+
+      const latest = appState.bodyMetrics[0]; // newest
+
+      // Calculate BMI
+      const heightM = appState.profile.height / 100;
+      const bmi = (latest.weight / (heightM * heightM)).toFixed(1);
+      document.getElementById('calc-bmi').textContent = bmi;
+      
+      let status = 'Normopeso';
+      if (bmi < 18.5) status = 'Sottopeso';
+      else if (bmi >= 25 && bmi < 30) status = 'Sovrappeso';
+      else if (bmi >= 30) status = 'Obesità';
+      document.getElementById('calc-bmi-status').textContent = status;
+
+      // Calculate BMR (Mifflin-St Jeor)
+      // BMR = 10 * weight + 6.25 * height - 5 * age + (5 for male, -161 for female)
+      const genderOffset = appState.profile.gender === 'male' ? 5 : -161;
+      const bmr = Math.round((10 * latest.weight) + (6.25 * appState.profile.height) - (5 * appState.profile.age) + genderOffset);
+      document.getElementById('calc-bmr').textContent = bmr;
+
+      // Render Logs History
+      appState.bodyMetrics.forEach(log => {
+        const item = document.createElement('div');
+        item.className = "bg-darkcard border border-darkborder rounded-2xl p-3 flex items-center justify-between text-xs";
+        item.innerHTML = `
+          <div>
+            <div class="font-bold text-white">${log.date} <span class="text-purple-400 ml-2">${log.weight} kg</span> ${log.bf ? `<span class="text-slate-400 font-normal">(${log.bf}% fat)</span>` : ''}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">
+              ${log.chest ? `Petto: ${log.chest}cm ` : ''}
+              ${log.waist ? `Vita: ${log.waist}cm ` : ''}
+              ${log.hips ? `Fianchi: ${log.hips}cm ` : ''}
+              ${log.biceps ? `Bicipite: ${log.biceps}cm` : ''}
+            </div>
+          </div>
+          <button onclick="deleteBodyLog('${log.id}')" class="text-slate-600 hover:text-red-400 p-1">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // Photo Upload Base64 Encoding Handler
+    function handlePhotoUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const base64 = evt.target.result;
+        const newPhoto = {
+          id: 'photo_' + Date.now(),
+          date: new Date().toISOString().split('T')[0],
+          base64: base64
+        };
+        appState.photos.unshift(newPhoto);
+        saveStateToLocal();
+        renderPhotos();
+        showToast('Foto aggiunta alla galleria!', 'fa-camera');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function deletePhoto(id) {
+      appState.photos = appState.photos.filter(p => p.id !== id);
+      saveStateToLocal();
+      renderPhotos();
+      showToast('Foto eliminata');
+    }
+
+    function renderPhotos() {
+      const gallery = document.getElementById('photo-gallery');
+      gallery.innerHTML = '';
+
+      if (appState.photos.length === 0) {
+        gallery.innerHTML = `<div class="col-span-2 text-xs text-slate-500 italic">Nessuna foto salvata.</div>`;
+        return;
+      }
+
+      appState.photos.forEach(photo => {
+        const div = document.createElement('div');
+        div.className = "relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-900 aspect-square";
+        div.innerHTML = `
+          <img src="${photo.base64}" alt="Progresso" class="w-full h-full object-cover">
+          <div class="absolute bottom-0 inset-x-0 bg-slate-950/80 p-1.5 text-[10px] text-slate-300 flex justify-between items-center">
+            <span>${photo.date}</span>
+            <button onclick="deletePhoto('${photo.id}')" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+        gallery.appendChild(div);
+      });
+    }
+
+    // ----------------------------------------------------
+    // ANALYTICS & CHARTS (Chart.js)
+    // ----------------------------------------------------
+    let chartEx = null;
+    let chartWeight = null;
+    let chartNutr = null;
+
+    function updateAnalyticsCharts() {
+      // 1. Populate Exercise Select
+      const select = document.getElementById('chart-exercise-select');
+      const uniqueEx = [...new Set(appState.workouts.map(w => w.name))];
+      select.innerHTML = '';
+      if (uniqueEx.length === 0) {
+        select.innerHTML = '<option>Nessun Esercizio</option>';
+      } else {
+        uniqueEx.forEach(exName => {
+          const opt = document.createElement('option');
+          opt.value = exName;
+          opt.textContent = exName;
+          select.appendChild(opt);
+        });
+      }
+
+      updateExerciseChart();
+      updateWeightChart();
+      updateNutritionChart();
+    }
+
+    function updateExerciseChart() {
+      const exName = document.getElementById('chart-exercise-select').value;
+      const ctx = document.getElementById('exerciseProgressChart').getContext('2d');
+
+      const filtered = appState.workouts.filter(w => w.name === exName).sort((a,b) => new Date(a.date) - new Date(b.date));
+      const labels = filtered.map(w => w.date);
+      const dataVolume = filtered.map(w => w.sets.reduce((acc, s) => acc + (s.weight * s.reps), 0));
+
+      if (chartEx) chartEx.destroy();
+      chartEx = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Volume Totale (kg)',
+            data: dataVolume,
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.15)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { ticks: { color: '#64748b', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function updateWeightChart() {
+      const ctx = document.getElementById('weightProgressChart').getContext('2d');
+      const sorted = [...appState.bodyMetrics].sort((a,b) => new Date(a.date) - new Date(b.date));
+      const labels = sorted.map(b => b.date);
+      const weights = sorted.map(b => b.weight);
+
+      if (chartWeight) chartWeight.destroy();
+      chartWeight = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Peso (kg)',
+            data: weights,
+            borderColor: '#8b5cf6',
+            backgroundColor: 'rgba(139, 92, 246, 0.15)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { ticks: { color: '#64748b', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function updateNutritionChart() {
+      const ctx = document.getElementById('nutritionProgressChart').getContext('2d');
+      // Aggregate last 7 days calories
+      const dates = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+      }
+
+      const kcalData = dates.map(d => {
+        const dayLogs = appState.nutrition.filter(n => n.date === d);
+        return dayLogs.reduce((acc, l) => acc + l.kcal, 0);
+      });
+
+      if (chartNutr) chartNutr.destroy();
+      chartNutr = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dates.map(d => d.slice(5)), // MM-DD
+          datasets: [{
+            label: 'Calorie Assunte',
+            data: kcalData,
+            backgroundColor: '#10b981',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { ticks: { color: '#64748b', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    // ----------------------------------------------------
+    // DATA BACKUP JSON EXPORT / IMPORT
+    // ----------------------------------------------------
+    function exportDataJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `ApexFit_Backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('File JSON esportato!', 'fa-file-export');
+    }
+
+    function importDataJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && typeof imported === 'object') {
+            appState = imported;
+            window.appState = appState;
+            saveStateToLocal();
+            renderAllViews();
+            loadProfileUI();
+            loadTargetsUI();
+            showToast('Dati importati con successo!', 'fa-file-import');
+          }
+        } catch (err) {
+          showToast('Errore nel formato del file JSON');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetAllDataConfirm() {
+      if (confirm('Sei sicuro di voler cancellare TUTTI i dati salvati? Questa azione non può essere annullata.')) {
+        appState = DEFAULT_STATE;
+        window.appState = appState;
+        saveStateToLocal();
+        renderAllViews();
+        showToast('Dati resettati');
+      }
+    }
+  </script>
+  <!-- Librerie Google per Auth e Drive -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+
+<script>
+// --- CONFIGURAZIONE GOOGLE ---
+const CLIENT_ID = '263498749634-kcdn25mabgrfiiebkju084d2eclkrve5.apps.googleusercontent.com';
+const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file'; 
+
+let tokenClient;
+let gapiInited = false;
+let gisInited = false;
+
+// 1. Inizializzazione GAPI
+function gapiLoaded() {
+    gapi.load('client', initializeGapiClient);
+}
+
+async function initializeGapiClient() {
+    await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
+    gapiInited = true;
+    maybeEnableButtons();
+}
+
+// 2. Inizializzazione GIS (Google Identity)
+function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: '',
+    });
+    gisInited = true;
+    maybeEnableButtons();
+}
+
+function maybeEnableButtons() {
+    if (gapiInited && gisInited) {
+        document.getElementById('authorize_button').style.visibility = 'visible';
+    }
+}
+
+// 3. Gestione Login
+function handleAuthClick() {
+    tokenClient.callback = async (resp) => {
+        if (resp.error !== undefined) throw (resp);
+        document.getElementById('auth-status').innerText = 'Stato: Connesso a Google Drive ✅';
+        document.getElementById('auth-status').style.color = 'green';
+        document.getElementById('authorize_button').innerText = 'Disconnetti';
+        document.getElementById('authorize_button').onclick = handleSignoutClick;
+        document.getElementById('drive-actions').style.display = 'flex';
+    };
+
+    if (gapi.client.getToken() === null) {
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+    } else {
+        tokenClient.requestAccessToken({ prompt: '' });
+    }
+}
+
+// 4. Gestione Logout
+function handleSignoutClick() {
+    const token = gapi.client.getToken();
+    if (token !== null) {
+        google.accounts.oauth2.revoke(token.access_token);
+        gapi.client.setToken('');
+        document.getElementById('auth-status').innerText = 'Stato: Non connesso';
+        document.getElementById('auth-status').style.color = '#666';
+        document.getElementById('authorize_button').innerText = 'Accedi con Google';
+        document.getElementById('authorize_button').onclick = handleAuthClick;
+        document.getElementById('drive-actions').style.display = 'none';
+    }
+}
+
+// 5. SALVA su Google Drive
+async function salvaSuDrive() {
+    // Recupera TUTTI i dati salvati nel browser (localStorage)
+    const datiApp = JSON.stringify(localStorage);
+    const fileName = 'ApexFit_Backup.json';
+
+    const fileMetadata = { name: fileName, mimeType: 'application/json' };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
+    form.append('file', new Blob([datiApp], { type: 'application/json' }));
+
+    try {
+        const response = await gapi.client.request({
+            path: 'https://www.googleapis.com/upload/drive/v3/files',
+            method: 'POST',
+            params: { uploadType: 'multipart' },
+            body: form
+        });
+        alert('✅ Backup salvato con successo su Google Drive!');
+    } catch (err) {
+        console.error('Errore salvataggio:', err);
+        alert('❌ Errore nel salvataggio su Drive. Controlla la console.');
+    }
+}
+
+// 6. CARICA da Google Drive
+async function caricaDaDrive() {
+    const fileName = 'ApexFit_Backup.json';
+    try {
+        const response = await gapi.client.drive.files.list({
+            q: `name='${fileName}' and trashed=false`,
+            fields: 'files(id, name)',
+            orderBy: 'createdTime desc',
+            pageSize: 1
+        });
+
+        const files = response.result.files;
+        if (files && files.length > 0) {
+            const fileId = files[0].id;
+            const res = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
+            
+            // Ripristina tutti i dati nel localStorage
+            const datiCaricati = res.body;
+            const parsedData = typeof datiCaricati === 'string' ? JSON.parse(datiCaricati) : datiCaricati;
+            
+            Object.keys(parsedData).forEach(key => {
+                localStorage.setItem(key, parsedData[key]);
+            });
+            
+            alert('✅ Backup caricato con successo! La pagina verrà ricaricata.');
+            location.reload(); // Ricarica per applicare i dati
+        } else {
+            alert('⚠️ Nessun file di backup trovato su Google Drive.');
+        }
+    } catch (err) {
+        console.error('Errore caricamento:', err);
+        alert('❌ Errore nel caricamento da Drive.');
+    }
+}
+</script>
+<!-- Librerie Google per Auth e Drive -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+</body>
+</html>
