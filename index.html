@@ -2066,8 +2066,8 @@
     }
   </script>
   <!-- Librerie Google per Auth e Drive -->
-<script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
-<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
+<script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
 
   <!-- OAUTH HELP MODAL -->
   <div id="oauth-help-modal" class="fixed inset-0 z-60 bg-black/60 flex items-center justify-center p-4 hidden">
@@ -2553,6 +2553,6 @@ document.addEventListener('change', (e)=>{ scheduleAutosave(); });
 </script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
 </body>
 </html>
