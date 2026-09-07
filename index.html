@@ -2852,6 +2852,11 @@ async function startBarcodeCamera() {
     return;
   }
 
+  if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    showToast('Per usare la fotocamera serve HTTPS o localhost. Apri l’app da un sito sicuro.');
+    return;
+  }
+
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showToast('Camera non disponibile sul tuo dispositivo');
     return;
