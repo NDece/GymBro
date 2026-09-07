@@ -255,9 +255,10 @@
         const nameEl = document.getElementById('cloud-user-name');
         const emailEl = document.getElementById('cloud-user-email');
         const status = document.getElementById('auth-status');
+        const userName = payload.name || payload.given_name || payload.email || 'Utente Google';
         details.classList.remove('hidden');
         document.getElementById('drive-actions').classList.remove('hidden');
-        nameEl.textContent = payload.name || payload.email || 'Utente Google';
+        nameEl.textContent = userName;
         emailEl.textContent = payload.email || '';
         status.textContent = 'Stato: Connesso';
       }
@@ -1222,23 +1223,29 @@
       const authDetails = document.getElementById('auth-user-details');
       const authEmail = document.getElementById('auth-user-email');
 
+      const savedGoogleToken = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
+      const savedGoogleProfile = savedGoogleToken ? parseJwt(savedGoogleToken) : null;
+      const googleDisplayName = savedGoogleProfile && (savedGoogleProfile.name || savedGoogleProfile.given_name || savedGoogleProfile.email)
+        ? (savedGoogleProfile.name || savedGoogleProfile.given_name || savedGoogleProfile.email)
+        : null;
+
       if (user) {
         syncIcon.className = 'fa-solid fa-cloud-check text-cyan-400';
         syncText.textContent = 'Cloud Sync';
         cloudIcon.className = 'w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/40 text-cyan-400 text-lg flex items-center justify-center';
         cloudIcon.innerHTML = '<i class="fa-solid fa-cloud-check"></i>';
-        cloudName.textContent = user.displayName || 'Utente Sincronizzato';
+        cloudName.textContent = user.displayName || googleDisplayName || 'Utente Sincronizzato';
         cloudStatus.textContent = 'I tuoi dati sono protetti e sincronizzati';
         authActions.classList.add('hidden');
         authDetails.classList.remove('hidden');
-        authEmail.textContent = user.uid;
+        authEmail.textContent = user.email || user.uid;
       } else {
         syncIcon.className = 'fa-solid fa-cloud text-slate-500';
         syncText.textContent = 'Locale';
         cloudIcon.className = 'w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-lg flex items-center justify-center';
         cloudIcon.innerHTML = '<i class="fa-solid fa-user-slash"></i>';
-        cloudName.textContent = 'Utente Ospite';
-        cloudStatus.textContent = 'Salvataggio locale su browser';
+        cloudName.textContent = googleDisplayName || 'Utente Ospite';
+        cloudStatus.textContent = googleDisplayName ? 'Accesso Google attivo' : 'Salvataggio locale su browser';
         authActions.classList.remove('hidden');
         authDetails.classList.add('hidden');
       }
@@ -2916,7 +2923,7 @@ function closeScanProductModal() {
 async function fetchOpenFoodFactsProduct(barcode) {
   const endpoints = [
     `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`,
-    `https://world.openfoodfacts.org/api/v2/search?code=${encodeURIComponent(barcode)}&fields=product_name,generic_name,nutriments,code,brands,quantity`
+    `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(barcode)}&search_simple=1&action=process&json=1`
   ];
 
   for (const endpoint of endpoints) {
@@ -2931,6 +2938,10 @@ async function fetchOpenFoodFactsProduct(barcode) {
 
       if (data && data.products && data.products.length) {
         return data.products[0];
+      }
+
+      if (data && data.products && data.products.length === 0 && data.search_terms) {
+        return null;
       }
     } catch (err) {
       console.warn('Open Food Facts probe failed:', endpoint, err);
@@ -2955,13 +2966,14 @@ async function submitBarcodeLookup() {
 
   try {
     const product = await fetchOpenFoodFactsProduct(barcode);
-    if (!product || !product.nutriments) {
+    if (!product) {
       showToast('Prodotto non trovato. Controlla il codice a barre');
       return;
     }
 
+    const productName = product.product_name || product.generic_name || product.abbreviated_product_name || `Prodotto ${barcode}`;
     const payload = {
-      labels: [{ description: product.product_name || product.generic_name || 'Prodotto' }],
+      labels: [{ description: productName }],
       texts: [],
       product: product,
       nutriments: product.nutriments || {}
