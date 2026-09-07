@@ -73,6 +73,21 @@
     .glow-emerald {
       box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
     }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-animate {
+      animation: fadeInUp 0.55s ease-out both;
+    }
     
     /* Hide spin buttons in number inputs */
     input[type=number]::-webkit-inner-spin-button, 
@@ -135,7 +150,7 @@
   </div>
 
   <div id="auth-gate" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/95 backdrop-blur-md px-4">
-    <div class="w-full max-w-md text-center">
+    <div class="login-animate w-full max-w-md text-center">
       <div class="mb-6">
         <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center shadow-2xl glow-cyan">
           <i class="fa-solid fa-bolt text-3xl text-slate-950"></i>
@@ -237,6 +252,15 @@
           if (btn) btn.innerText = 'Accedi';
         }
       })();
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
+        if (saved) {
+          setAccessState(true);
+        } else {
+          setAccessState(false);
+        }
+      });
 
       async function autoSaveToCloud(payload) {
         const idToken = sessionStorage.getItem('google_id_token');
