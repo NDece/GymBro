@@ -2646,6 +2646,7 @@ let barcodeCameraStream = null;
 let barcodeScanActive = false;
 let barcodeScanLoopTimer = null;
 let barcodeFlashEnabled = false;
+let barcodeDecodeInFlight = false;
 
 function normalizeBarcodeValue(value) {
   if (!value) return '';
@@ -2738,22 +2739,24 @@ function handleBarcodeScanResult(text) {
       }, 600);
     }
     if (barcodeScanActive) {
-      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 350);
+      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 700);
     }
     return;
   }
 
   if (barcodeScanActive) {
-    barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 250);
+    barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 500);
   }
 }
 
 async function readBarcodeFromCameraLoop() {
-  if (!barcodeScanActive) return;
+  if (!barcodeScanActive || barcodeDecodeInFlight) return;
   const video = document.getElementById('barcode-video');
   if (!video || !barcodeCameraReader) {
     return;
   }
+
+  barcodeDecodeInFlight = true;
 
   try {
     const result = await Promise.race([
@@ -2765,8 +2768,10 @@ async function readBarcodeFromCameraLoop() {
     handleBarcodeScanResult(text);
   } catch (err) {
     if (barcodeScanActive) {
-      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 300);
+      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 500);
     }
+  } finally {
+    barcodeDecodeInFlight = false;
   }
 }
 
@@ -2794,6 +2799,7 @@ async function startBarcodeCamera() {
     barcodeScanActive = true;
     barcodeFlashEnabled = false;
     barcodeScanLoopTimer = null;
+    barcodeDecodeInFlight = false;
 
     barcodeCameraStream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -2827,7 +2833,9 @@ async function startBarcodeCamera() {
       flashBtn.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i> Flash';
     }
 
-    readBarcodeFromCameraLoop();
+    setTimeout(() => {
+      if (barcodeScanActive) readBarcodeFromCameraLoop();
+    }, 400);
   } catch (err) {
     console.error('Unable to access camera:', err);
     showToast('Impossibile usare la fotocamera. Inserisci il codice manualmente');
@@ -2843,6 +2851,7 @@ function stopBarcodeCamera() {
   const flashBtn = document.getElementById('flash-camera-btn');
 
   barcodeScanActive = false;
+  barcodeDecodeInFlight = false;
   if (barcodeScanLoopTimer) {
     clearTimeout(barcodeScanLoopTimer);
     barcodeScanLoopTimer = null;
