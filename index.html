@@ -2702,6 +2702,7 @@ let barcodeScanActive = false;
 let barcodeScanLoopTimer = null;
 let barcodeFlashEnabled = false;
 let barcodeDecodeInFlight = false;
+let barcodeCameraControls = null;
 
 function normalizeBarcodeValue(value) {
   if (!value) return '';
@@ -2780,6 +2781,11 @@ function handleBarcodeScanResult(text) {
     if (input) input.value = normalized;
     showBarcodeReadFeedback(normalized);
     showToast(`Codice letto: ${normalized}`, 'fa-check-circle');
+
+    if (barcodeCameraControls && typeof barcodeCameraControls.stop === 'function') {
+      try { barcodeCameraControls.stop(); } catch (err) { console.warn('Could not stop barcode controls', err); }
+    }
+
     setTimeout(() => {
       stopBarcodeCamera();
       submitBarcodeLookup();
@@ -2798,40 +2804,41 @@ function handleBarcodeScanResult(text) {
         wrap.classList.add('border-slate-700');
       }, 600);
     }
-    if (barcodeScanActive) {
-      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 700);
-    }
-    return;
-  }
-
-  if (barcodeScanActive) {
-    barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 500);
   }
 }
 
-async function readBarcodeFromCameraLoop() {
-  if (!barcodeScanActive || barcodeDecodeInFlight) return;
+function startBarcodeReaderLoop() {
   const video = document.getElementById('barcode-video');
-  if (!video || !barcodeCameraReader) {
-    return;
+  if (!video || !barcodeCameraReader || !barcodeScanActive) return;
+
+  if (barcodeCameraControls && typeof barcodeCameraControls.stop === 'function') {
+    try { barcodeCameraControls.stop(); } catch (err) { console.warn('Existing barcode control stop failed', err); }
   }
 
-  barcodeDecodeInFlight = true;
+  barcodeCameraControls = null;
 
   try {
-    const result = await Promise.race([
-      barcodeCameraReader.decodeFromVideoElement(video),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('barcode-timeout')), 1800))
-    ]);
+    barcodeCameraReader.decodeFromVideoElement(video, (result, error, controls) => {
+      if (!barcodeScanActive) {
+        if (controls && typeof controls.stop === 'function') {
+          try { controls.stop(); } catch (err) {}
+        }
+        return;
+      }
 
-    const text = result && result.getText ? result.getText() : '';
-    handleBarcodeScanResult(text);
+      if (result) {
+        const text = result.getText ? result.getText() : '';
+        barcodeCameraControls = controls || null;
+        handleBarcodeScanResult(text);
+        return;
+      }
+
+      if (error && error.name && error.name !== 'NotFoundException') {
+        console.warn('Barcode decode warning:', error);
+      }
+    });
   } catch (err) {
-    if (barcodeScanActive) {
-      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 500);
-    }
-  } finally {
-    barcodeDecodeInFlight = false;
+    console.warn('Barcode decode loop setup failed', err);
   }
 }
 
@@ -2860,6 +2867,7 @@ async function startBarcodeCamera() {
     barcodeFlashEnabled = false;
     barcodeScanLoopTimer = null;
     barcodeDecodeInFlight = false;
+    barcodeCameraControls = null;
 
     barcodeCameraStream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -2894,8 +2902,8 @@ async function startBarcodeCamera() {
     }
 
     setTimeout(() => {
-      if (barcodeScanActive) readBarcodeFromCameraLoop();
-    }, 400);
+      if (barcodeScanActive) startBarcodeReaderLoop();
+    }, 350);
   } catch (err) {
     console.error('Unable to access camera:', err);
     showToast('Impossibile usare la fotocamera. Inserisci il codice manualmente');
@@ -2912,6 +2920,11 @@ function stopBarcodeCamera() {
 
   barcodeScanActive = false;
   barcodeDecodeInFlight = false;
+  if (barcodeCameraControls && typeof barcodeCameraControls.stop === 'function') {
+    try { barcodeCameraControls.stop(); } catch (err) {}
+  }
+  barcodeCameraControls = null;
+
   if (barcodeScanLoopTimer) {
     clearTimeout(barcodeScanLoopTimer);
     barcodeScanLoopTimer = null;
