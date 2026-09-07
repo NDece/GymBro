@@ -83,6 +83,13 @@
       -webkit-overflow-scrolling: touch;
     }
 
+    .fixed.inset-0.z-50 > div {
+      max-height: min(85vh, 720px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
     main {
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -1503,6 +1510,7 @@
     function updateModalScrollLock() {
       const activeModal = document.querySelector('.fixed.inset-0.z-50:not(.hidden)');
       document.body.classList.toggle('modal-open', !!activeModal);
+      document.documentElement.classList.toggle('modal-open', !!activeModal);
     }
 
     // Modal Display Logic
