@@ -2248,13 +2248,6 @@ async function initializeGapiClient() {
       await gapi.client.load('drive', 'v3');
       gapiInited = true;
       maybeEnableButtons();
-      if (!gapi.client.getToken()) {
-        setTimeout(() => {
-          if (document.readyState === 'complete') {
-            requestGoogleAccessOnStartup();
-          }
-        }, 600);
-      }
     } catch (err) {
       console.error('GAPI init failed:', err);
       showToast('Google non disponibile al momento');
@@ -2270,7 +2263,6 @@ function gisLoaded() {
     });
     gisInited = true;
     maybeEnableButtons();
-    setTimeout(() => requestGoogleAccessOnStartup(), 700);
 }
 
 function maybeEnableButtons() {
@@ -2281,13 +2273,9 @@ function maybeEnableButtons() {
 }
 
 function requestGoogleAccessOnStartup() {
-  if (!tokenClient || !gisInited) return;
-  if (gapi.client && gapi.client.getToken()) return;
-  try {
-    tokenClient.requestAccessToken({ prompt: 'consent' });
-  } catch (err) {
-    console.warn('Google access prompt skipped on startup:', err);
-  }
+  // Intentionally left as a manual trigger only.
+  // Do not auto-open Google on page load.
+  return;
 }
 
   // Unified login handler used by header button
