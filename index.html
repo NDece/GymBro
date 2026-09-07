@@ -2382,7 +2382,6 @@ async function caricaDaDrive() {
       });
     }
     document.getElementById('backup-list').classList.remove('hidden');
-    openModal('cloud-modal');
   } catch (err) {
     console.error('Errore caricamento lista:', err);
     alert('❌ Errore nel recupero della lista backup da Drive.');
@@ -2472,7 +2471,6 @@ async function listTrashedFiles() {
       list.appendChild(li);
     });
     document.getElementById('trash-list').classList.remove('hidden');
-    openModal('cloud-modal');
   } catch(err){ console.error('list trash err', err); showToast('Errore recupero cestino'); }
 }
 
