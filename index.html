@@ -140,7 +140,8 @@
       <h1 class="mb-5 text-5xl sm:text-6xl font-black tracking-[-0.06em] bg-gradient-to-r from-white via-cyan-200 to-emerald-300 bg-clip-text text-transparent">GymBro</h1>
 
       <p class="mx-auto max-w-sm text-base sm:text-lg leading-relaxed italic text-slate-200/90">
-        Cura il tuo presente e il futuro si prenderà cura di te
+        Cura il tuo presente<br>
+        e il futuro si prenderà cura di te
       </p>
 
       <p class="mt-8 text-xs text-slate-400">Preparati al tuo miglior cambiamento.</p>
@@ -162,8 +163,9 @@
         <h1 class="text-lg font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">GymBro</h1>
         <span class="text-[10px] text-slate-400 tracking-wider font-semibold uppercase">Studio Pro</span>
       </div>
-      <div class="hidden sm:block text-[9px] italic text-slate-300/80 whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px] ml-1">
-        Cura il tuo presente e il futuro si prenderà cura di te <span class="font-semibold text-slate-400">Cit. Dece</span>
+      <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
+        Cura il tuo presente<br>
+        e il futuro si prenderà cura di te <span class="font-semibold text-slate-400">Cit. Dece</span>
       </div>
     </div>
 
@@ -205,17 +207,23 @@
       // Set your Google OAuth Client ID here
       const GOOGLE_CLIENT_ID = '263498749634-kcdn25mabgrfiiebkju084d2eclkrve5.apps.googleusercontent.com';
 
+      function unlockApp() {
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const appShell = document.getElementById('app-shell');
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (appShell) appShell.classList.remove('hidden');
+      }
+
       function onGoogleLoggedIn(response) {
         const idToken = response.credential;
         const remember = document.getElementById('remember-creds') && document.getElementById('remember-creds').checked;
         if (remember) localStorage.setItem('google_id_token', idToken);
         else sessionStorage.setItem('google_id_token', idToken);
         const payload = parseJwt(idToken);
-        setAccessState(true);
+        unlockApp();
         setCloudUserUI(payload);
         showToast('Accesso Google effettuato', 'success');
         updateSyncStatus(true);
-        // close modal if visible
         try { closeModal('cloud-modal'); } catch(e){}
       }
 
@@ -244,13 +252,6 @@
       }
 
       function enterApp() {
-        const welcome = document.getElementById('welcome-screen');
-        const appShell = document.getElementById('app-shell');
-        if (welcome) welcome.classList.add('hidden');
-        if (appShell) appShell.classList.remove('hidden');
-      }
-
-      function triggerGoogleSignIn() {
         if (window.google && GOOGLE_CLIENT_ID) {
           google.accounts.id.prompt();
           return;
@@ -262,6 +263,10 @@
         }
 
         openModal('cloud-modal');
+      }
+
+      function triggerGoogleSignIn() {
+        enterApp();
       }
 
       (function initGoogle() {
