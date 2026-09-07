@@ -149,26 +149,6 @@
     <span id="toast-msg">Messaggio di notifica</span>
   </div>
 
-  <div id="auth-gate" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/95 backdrop-blur-md px-4">
-    <div class="login-animate w-full max-w-md text-center">
-      <div class="mb-6">
-        <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center shadow-2xl glow-cyan">
-          <i class="fa-solid fa-bolt text-3xl text-slate-950"></i>
-        </div>
-      </div>
-      <p class="text-xs uppercase tracking-[0.35rem] text-cyan-300/80 mb-4">Benvenuto in</p>
-      <h2 class="text-4xl sm:text-5xl font-black leading-tight bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent mb-4">GymBro</h2>
-      <p class="text-base sm:text-lg text-slate-200/90 mb-8 leading-relaxed italic">
-        Cura il tuo presente e il futuro si prenderà cura di te
-      </p>
-      <p class="text-xs text-slate-400 mb-8">Accedi con il tuo account Google per entrare nel tuo allenamento, dieta e progresso.</p>
-      <button onclick="triggerGoogleSignIn()" class="w-full max-w-xs mx-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-black text-sm shadow-xl hover:brightness-110 transition-all">
-        <i class="fa-brands fa-google mr-2"></i>Accedi con Google
-      </button>
-      <p class="text-[10px] text-slate-500 mt-6">Cit. Dece</p>
-    </div>
-  </div>
-
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
@@ -214,24 +194,18 @@
         status.textContent = 'Stato: Connesso';
       }
 
-      function setAccessState(isLoggedIn) {
-        const appShell = document.getElementById('app-shell');
-        const authGate = document.getElementById('auth-gate');
-        if (!appShell || !authGate) return;
-        appShell.classList.toggle('hidden', !isLoggedIn);
-        authGate.classList.toggle('hidden', isLoggedIn);
-      }
-
       function triggerGoogleSignIn() {
         if (window.google && GOOGLE_CLIENT_ID) {
           google.accounts.id.prompt();
-        } else {
-          if (typeof loginWithGoogle === 'function') {
-            loginWithGoogle();
-          } else {
-            openModal('cloud-modal');
-          }
+          return;
         }
+
+        if (typeof loginWithGoogle === 'function') {
+          loginWithGoogle();
+          return;
+        }
+
+        openModal('cloud-modal');
       }
 
       (function initGoogle() {
@@ -240,27 +214,14 @@
           const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
           if (saved) {
             const p = parseJwt(saved);
-            setAccessState(true);
             setCloudUserUI(p);
             updateSyncStatus(true);
-          } else {
-            setAccessState(false);
           }
         } else {
-          setAccessState(true);
           const btn = document.getElementById('google-login-btn');
           if (btn) btn.innerText = 'Accedi';
         }
       })();
-
-      document.addEventListener('DOMContentLoaded', () => {
-        const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
-        if (saved) {
-          setAccessState(true);
-        } else {
-          setAccessState(false);
-        }
-      });
 
       async function autoSaveToCloud(payload) {
         const idToken = sessionStorage.getItem('google_id_token');
