@@ -1049,88 +1049,49 @@
   </div>
 
   <!-- MODAL: CLOUD SYNC & AUTH -->
-  <div id="cloud-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-darkcard border border-darkborder rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl text-center">
-      <div class="w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-500/40 text-cyan-400 text-xl flex items-center justify-center mx-auto">
+  <div id="cloud-modal" class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-sm rounded-[30px] border border-white/10 bg-[rgba(255,255,255,0.08)] p-5 shadow-[0_30px_80px_rgba(15,23,42,0.45)] backdrop-blur-2xl ring-1 ring-white/5 text-center">
+      <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400/25 to-sky-500/20 text-xl text-cyan-300 ring-1 ring-cyan-300/20">
         <i class="fa-solid fa-cloud"></i>
       </div>
 
-<!-- INIZIO SEZIONE SINCRONIZZAZIONE CLOUD MODIFICATA -->
-<!-- INIZIO SEZIONE SINCRONIZZAZIONE CLOUD (DARK) -->
-<div id="cloud-section" class="bg-darkcard border border-darkborder rounded-xl p-4 mt-3 text-left">
-  <h3 class="text-sm font-bold text-slate-200 mb-1">Sincronizzazione Cloud (Google)</h3>
-  <p id="auth-status" class="text-xs text-slate-400 mb-3">Stato: Non connesso</p>
+      <div id="cloud-section" class="rounded-2xl bg-white/5 p-4 text-left ring-1 ring-white/5">
+        <h3 class="mb-1 text-sm font-semibold text-slate-100">Sincronizzazione Cloud</h3>
+        <p id="auth-status" class="mb-3 text-xs text-slate-300/80">Stato: Non connesso</p>
 
-  <div class="flex flex-col items-center space-y-2">
-    <label class="text-xs text-slate-400 flex items-center space-x-2">
-      <input id="remember-creds" type="checkbox" class="accent-cyan-400" />
-      <span>Ricorda credenziali</span>
-    </label>
+        <div class="flex flex-col items-center space-y-2">
+          <label class="flex items-center space-x-2 text-[11px] text-slate-300/80">
+            <input id="remember-creds" type="checkbox" class="accent-cyan-400" />
+            <span>Ricorda credenziali</span>
+          </label>
 
-    <div id="drive-actions" class="hidden w-full flex gap-2 mt-2">
-      <button onclick="salvaSuDrive()" class="flex-1 py-2 rounded-xl bg-emerald-500 text-slate-950">💾 Salva Backup</button>
-      <button onclick="caricaDaDrive()" class="flex-1 py-2 rounded-xl bg-amber-400 text-black">📥 Carica Backup</button>
-      <button onclick="listTrashedFiles()" class="flex-1 py-2 rounded-xl bg-red-600 text-white">🗑️ Cestino</button>
-    </div>
+          <div id="drive-actions" class="mt-2 hidden w-full gap-2">
+            <button onclick="salvaSuDrive()" class="flex-1 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500 px-2 py-3 text-[11px] font-bold text-slate-950 shadow-sm">💾 Salva</button>
+            <button onclick="caricaDaDrive()" class="flex-1 rounded-2xl bg-gradient-to-br from-amber-300 to-amber-400 px-2 py-3 text-[11px] font-bold text-slate-950 shadow-sm">📥 Carica</button>
+            <button onclick="listTrashedFiles()" class="flex-1 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 px-2 py-3 text-[11px] font-bold text-white shadow-sm">🗑️ Cestino</button>
+          </div>
 
-    <div id="auth-user-details" class="hidden text-xs text-slate-300 mt-2 text-center">
-      <div id="cloud-user-name" class="font-semibold"></div>
-      <div id="cloud-user-email" class="text-slate-400 text-xs"></div>
-      <button onclick="logoutCloud()" class="mt-2 text-xs text-red-400 underline">Disconnetti</button>
-    </div>
-    
-    <div id="backup-list" class="hidden mt-3 text-xs text-slate-300 w-full">
-      <div class="font-semibold mb-2">Backup trovati</div>
-      <ul id="backup-list-items" class="space-y-2 max-h-40 overflow-auto">
-        <!-- Populated dynamically -->
-      </ul>
-    </div>
-    
-    <!-- Nutrition proposal modal (after recognition) -->
-    <div id="nutrition-proposal-modal" class="fixed inset-0 z-60 bg-black/60 flex items-start justify-center p-4 pt-10 hidden">
-      <div class="bg-darkcard border border-darkborder rounded-2xl p-6 max-w-md w-full text-slate-100 shadow-2xl">
-        <h3 class="text-lg font-bold mb-2">Proposta Valori Nutrizionali</h3>
-        <p id="recognize-source" class="text-xs text-slate-400 mb-3"></p>
-        <form id="nutrition-proposal-form" onsubmit="saveRecognizedNutrition(event)" class="space-y-3">
-          <div>
-            <label class="text-xs text-slate-400">Nome prodotto</label>
-            <input id="prop-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" required>
+          <div id="auth-user-details" class="mt-3 hidden w-full text-center text-[11px] text-slate-200">
+            <div id="cloud-user-name" class="font-semibold"></div>
+            <div id="cloud-user-email" class="mt-0.5 text-slate-300/70"></div>
+            <button onclick="logoutCloud()" class="mt-2 text-[11px] text-red-400 underline">Disconnetti</button>
           </div>
-          <div class="grid grid-cols-4 gap-2">
-            <div>
-              <label class="text-xs text-slate-400">kcal</label>
-              <input id="prop-kcal" type="number" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1 text-sm text-white">
-            </div>
-            <div>
-              <label class="text-xs text-slate-400">Proteine (g)</label>
-              <input id="prop-p" type="number" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1 text-sm text-white">
-            </div>
-            <div>
-              <label class="text-xs text-slate-400">Carbo (g)</label>
-              <input id="prop-c" type="number" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1 text-sm text-white">
-            </div>
-            <div>
-              <label class="text-xs text-slate-400">Grassi (g)</label>
-              <input id="prop-f" type="number" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1 text-sm text-white">
-            </div>
+
+          <div id="backup-list" class="hidden mt-3 w-full text-[11px] text-slate-200">
+            <div class="mb-2 font-semibold">Backup trovati</div>
+            <ul id="backup-list-items" class="max-h-40 space-y-2 overflow-auto">
+              <!-- Populated dynamically -->
+            </ul>
           </div>
-          <div class="flex justify-end space-x-2">
-            <button type="button" onclick="closeModal('nutrition-proposal-modal')" class="px-3 py-2 bg-slate-700 rounded text-sm">Annulla</button>
-            <button type="submit" class="px-3 py-2 bg-emerald-500 rounded text-sm font-bold">Salva nel Database</button>
+
+          <div id="trash-list" class="hidden mt-3 w-full text-[11px] text-slate-200">
+            <div class="mb-2 font-semibold">Cestino</div>
+            <ul id="trash-list-items" class="max-h-40 space-y-2 overflow-auto"></ul>
           </div>
-        </form>
+        </div>
       </div>
-    </div>
-    
-    <div id="trash-list" class="hidden mt-3 text-xs text-slate-300 w-full">
-      <div class="font-semibold mb-2">Cestino (file cancellati)</div>
-      <ul id="trash-list-items" class="space-y-2 max-h-40 overflow-auto"></ul>
-    </div>
-  </div>
-</div>
-<!-- FINE SEZIONE SINCRONIZZAZIONE CLOUD (DARK) -->
 
-      <button onclick="closeModal('cloud-modal')" class="text-xs text-slate-500 hover:text-slate-300">Chiudi</button>
+      <button onclick="closeModal('cloud-modal')" class="mt-4 text-[11px] text-slate-300/80 hover:text-white">Chiudi</button>
     </div>
   </div>
 
@@ -2348,8 +2309,8 @@ function handleAuthClick() {
     const driveActions = document.getElementById('drive-actions');
     if (driveActions) driveActions.style.display = 'flex';
     unlockApp();
-    // Leave the cloud modal closed; it should only open when the user taps the cloud/local button intentionally.
-    // Automatically load backup list after successful auth
+    closeModal('cloud-modal');
+    // Keep the app in the main view; the user can open cloud actions intentionally from the cloud button.
     try { await caricaDaDrive(); } catch(e) { console.warn('Auto-load backups failed', e); }
   };
 
