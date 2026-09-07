@@ -125,7 +125,7 @@
   </header>
 
   <!-- Global Toast Notification Banner -->
-  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-800/95 border border-cyan-500/50 text-cyan-300 px-4 py-2.5 rounded-full text-xs font-semibold shadow-2xl flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-10px]">
+  <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100%-1.5rem)] bg-slate-800/95 border border-cyan-500/40 text-cyan-300 px-3 py-2 rounded-2xl text-[11px] font-semibold shadow-xl flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-10px]">
     <i id="toast-icon" class="fa-solid fa-info-circle"></i>
     <span id="toast-msg">Messaggio di notifica</span>
   </div>
@@ -789,6 +789,26 @@
     </div>
   </div>
 
+  <!-- MODAL: BARCODE SCAN -->
+  <div id="scan-product-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-start justify-center p-3 sm:p-4 hidden">
+    <div class="bg-darkcard border border-darkborder rounded-2xl p-4 w-full max-w-sm mt-10 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-barcode text-amber-400"></i>
+          <span>Scansiona prodotto</span>
+        </h3>
+        <button onclick="closeModal('scan-product-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="space-y-3 pt-3">
+        <label class="text-xs text-slate-400 block">Codice a barre</label>
+        <input id="barcode-input" type="text" inputmode="numeric" placeholder="es. 3017624010701" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+        <button onclick="submitBarcodeLookup()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-sm shadow-lg">
+          Cerca nutrizione
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: FOOD PRESET DATABASE -->
   <div id="food-preset-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
     <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
@@ -969,8 +989,8 @@
     </div>
     
     <!-- Nutrition proposal modal (after recognition) -->
-    <div id="nutrition-proposal-modal" class="fixed inset-0 z-60 bg-black/60 flex items-center justify-center p-4 hidden">
-      <div class="bg-darkcard border border-darkborder rounded-2xl p-6 max-w-md w-full text-slate-100">
+    <div id="nutrition-proposal-modal" class="fixed inset-0 z-60 bg-black/60 flex items-start justify-center p-4 pt-10 hidden">
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-6 max-w-md w-full text-slate-100 shadow-2xl">
         <h3 class="text-lg font-bold mb-2">Proposta Valori Nutrizionali</h3>
         <p id="recognize-source" class="text-xs text-slate-400 mb-3"></p>
         <form id="nutrition-proposal-form" onsubmit="saveRecognizedNutrition(event)" class="space-y-3">
@@ -1188,7 +1208,39 @@
     };
 
     let appState = JSON.parse(localStorage.getItem('gymbro_data')) || DEFAULT_STATE;
+    const legacyFoodDb = localStorage.getItem('db_foods');
+    if (legacyFoodDb) {
+      try {
+        const parsedDb = JSON.parse(legacyFoodDb);
+        if (Array.isArray(parsedDb)) {
+          appState.presets = parsedDb;
+        } else if (parsedDb && typeof parsedDb === 'object') {
+          const migrated = Object.values(parsedDb)
+            .filter(item => item && typeof item === 'object' && item.name)
+            .map(item => ({ name: item.name, p: Number(item.p) || 0, c: Number(item.c) || 0, f: Number(item.f) || 0 }));
+          if (migrated.length) appState.presets = migrated;
+        }
+      } catch (err) {
+        console.warn('Legacy food DB parse failed:', err);
+      }
+    }
     window.appState = appState;
+
+    function persistFoodDatabase() {
+      const normalized = (appState.presets || []).map(item => ({
+        name: String(item.name || '').trim(),
+        p: Number(item.p) || 0,
+        c: Number(item.c) || 0,
+        f: Number(item.f) || 0
+      })).filter(item => item.name);
+
+      appState.presets = normalized;
+      localStorage.setItem('db_foods', JSON.stringify(normalized));
+      localStorage.setItem('gymbro_data', JSON.stringify(appState));
+      if (window.syncStateToCloud) {
+        window.syncStateToCloud();
+      }
+    }
 
     // Save State locally and sync to cloud if available
     window.saveStateToLocal = function() {
@@ -1626,7 +1678,7 @@
       const f = parseFloat(document.getElementById('preset-f').value) || 0;
 
       appState.presets.push({ name, p, c, f });
-      saveStateToLocal();
+      persistFoodDatabase();
       renderPresets();
       document.getElementById('preset-name').value = '';
       showToast('Preset salvato nella libreria!', 'fa-bookmark');
@@ -2391,7 +2443,8 @@ async function restoreFile(fileId) {
 async function saveDatabaseToDrive() {
   const token = (gapi.client.getToken() && gapi.client.getToken().access_token) || null;
   if (!token) return;
-  const db = localStorage.getItem('db_foods') || '{}';
+  const db = JSON.stringify((appState.presets || []));
+  localStorage.setItem('db_foods', db);
   await uploadOrUpdateFile('Database_GymBro.json', new Blob([db], { type: 'application/json' }), 'application/json');
 }
 
@@ -2447,18 +2500,33 @@ function confirmAndTrashPhoto(fileId, name) {
 }
 
 // --- Food barcode scanning with Open Food Facts API ---
-async function scanFoodByBarcode() {
-  const barcode = window.prompt('Inserisci il codice a barre del prodotto:', '');
-  if (!barcode || !barcode.trim()) {
+function openScanProductModal() {
+  const modal = document.getElementById('scan-product-modal');
+  const input = document.getElementById('barcode-input');
+  if (modal) modal.classList.remove('hidden');
+  if (input) {
+    setTimeout(() => input.focus(), 80);
+  }
+}
+
+function closeScanProductModal() {
+  const modal = document.getElementById('scan-product-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitBarcodeLookup() {
+  const input = document.getElementById('barcode-input');
+  const barcode = input ? input.value.trim() : '';
+  if (!barcode) {
     showToast('Inserisci un codice a barre valido');
     return;
   }
 
-  const code = barcode.trim();
+  closeScanProductModal();
   showToast('Ricerca nutrizione in corso...');
 
   try {
-    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`);
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }
@@ -2484,6 +2552,10 @@ async function scanFoodByBarcode() {
     console.error('Open Food Facts barcode lookup failed:', err);
     showToast('Errore nella ricerca del prodotto');
   }
+}
+
+async function scanFoodByBarcode() {
+  openScanProductModal();
 }
 
 function openNutritionProposalModal(data, dataUrl) {
@@ -2529,10 +2601,24 @@ function saveRecognizedNutrition(e) {
   const p = parseInt(document.getElementById('prop-p').value) || 0;
   const c = parseInt(document.getElementById('prop-c').value) || 0;
   const f = parseInt(document.getElementById('prop-f').value) || 0;
-  const db = JSON.parse(localStorage.getItem('db_foods') || '{}');
-  db[name] = { name, kcal, p, c, f, ts: new Date().toISOString() };
-  localStorage.setItem('db_foods', JSON.stringify(db));
-  saveDatabaseToDrive();
+
+  if (!name) {
+    showToast('Inserisci un nome prodotto valido');
+    return;
+  }
+
+  const existing = appState.presets.find(item => item.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    existing.p = p;
+    existing.c = c;
+    existing.f = f;
+    existing.kcal = kcal;
+  } else {
+    appState.presets.push({ name, p, c, f, kcal, ts: new Date().toISOString() });
+  }
+
+  persistFoodDatabase();
+  renderPresets();
   scheduleAutosave();
   closeModal('nutrition-proposal-modal');
   showToast('Alimento salvato nel Database');
