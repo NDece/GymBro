@@ -56,13 +56,13 @@
     html, body {
       height: 100%;
       min-height: var(--app-vh, 1vh) * 100;
-      overflow-x: hidden;
-      overflow-y: auto;
+      overflow: hidden;
+      overscroll-behavior: none;
     }
 
     body {
       min-height: var(--app-vh, 1vh) * 100;
-      height: auto;
+      height: var(--app-vh, 1vh) * 100;
       padding-top: max(env(safe-area-inset-top), 0px);
       padding-bottom: max(env(safe-area-inset-bottom), 0px);
       padding-left: max(env(safe-area-inset-left), 0px);
@@ -70,6 +70,12 @@
       background-color: #090d16;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       touch-action: manipulation;
+    }
+
+    main {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
 
     .app-header {
@@ -785,6 +791,21 @@
         <button onclick="setRestTimer(90)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">90s</button>
         <button onclick="setRestTimer(120)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">120s</button>
         <button onclick="setRestTimer(180)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">180s</button>
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <div class="text-[10px] uppercase tracking-[0.2rem] text-slate-400 text-left">Imposta minuti</div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[10px] text-slate-400 block mb-1">Minuti</label>
+            <input id="timer-minutes-input" type="number" min="0" max="59" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-sm text-white text-center">
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400 block mb-1">Secondi</label>
+            <input id="timer-seconds-input" type="number" min="0" max="59" value="30" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-sm text-white text-center">
+          </div>
+        </div>
+        <button onclick="applyCustomTimer()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 text-slate-950 font-bold text-xs">Imposta tempo</button>
       </div>
 
       <!-- Actions -->
@@ -1642,15 +1663,45 @@
     let timerSeconds = 90;
     let timerRunning = false;
 
+    function syncTimerInputs() {
+      const minutesInput = document.getElementById('timer-minutes-input');
+      const secondsInput = document.getElementById('timer-seconds-input');
+      if (!minutesInput || !secondsInput) return;
+
+      const minutes = Math.floor(timerSeconds / 60);
+      const seconds = timerSeconds % 60;
+      minutesInput.value = Math.max(0, minutes);
+      secondsInput.value = Math.max(0, seconds);
+    }
+
     function setRestTimer(sec) {
-      timerSeconds = sec;
+      timerSeconds = Math.max(0, Number(sec) || 0);
+      updateTimerDisplay();
+    }
+
+    function applyCustomTimer() {
+      const minutesInput = document.getElementById('timer-minutes-input');
+      const secondsInput = document.getElementById('timer-seconds-input');
+      if (!minutesInput || !secondsInput) return;
+
+      const minutes = Math.max(0, Number(minutesInput.value) || 0);
+      const seconds = Math.max(0, Math.min(59, Number(secondsInput.value) || 0));
+      const totalSeconds = minutes * 60 + seconds;
+      if (totalSeconds <= 0) {
+        showToast('Inserisci un tempo valido');
+        return;
+      }
+
+      timerSeconds = totalSeconds;
       updateTimerDisplay();
     }
 
     function updateTimerDisplay() {
       const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
       const s = (timerSeconds % 60).toString().padStart(2, '0');
-      document.getElementById('timer-display').textContent = `${m}:${s}`;
+      const timerDisplay = document.getElementById('timer-display');
+      if (timerDisplay) timerDisplay.textContent = `${m}:${s}`;
+      syncTimerInputs();
     }
 
     function toggleTimerStart() {
@@ -1687,8 +1738,13 @@
       timerRunning = false;
       timerSeconds = 90;
       updateTimerDisplay();
-      document.getElementById('timer-badge').classList.add('hidden');
-      document.getElementById('timer-start-btn').textContent = 'Avvia';
+      const timerBadge = document.getElementById('timer-badge');
+      if (timerBadge) timerBadge.classList.add('hidden');
+      const timerStartBtn = document.getElementById('timer-start-btn');
+      if (timerStartBtn) {
+        timerStartBtn.textContent = 'Avvia';
+        timerStartBtn.className = 'flex-1 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm';
+      }
     }
 
     function toggleTimerModal() {
