@@ -4,7 +4,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, shrink-to-fit=no">
   <title>GymBro Studio - Fitness, Nutrizione & Progresso</title>
   
   <!-- Tailwind CSS -->
@@ -43,15 +43,26 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
   
   <style>
+    :root {
+      --app-vh: 1vh;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+      background: #090d16;
+    }
+
     /* Safe Area Insets for iOS devices like iPhone 15 Pro */
     html, body {
       height: 100%;
-      min-height: 100vh;
-      min-height: 100dvh;
+      min-height: var(--app-vh, 1vh) * 100;
       overflow: hidden;
+      overscroll-behavior: none;
     }
 
     body {
+      min-height: var(--app-vh, 1vh) * 100;
+      height: var(--app-vh, 1vh) * 100;
       padding-top: max(env(safe-area-inset-top), 0px);
       padding-bottom: max(env(safe-area-inset-bottom), 0px);
       padding-left: max(env(safe-area-inset-left), 0px);
@@ -140,7 +151,7 @@
 </head>
 <body class="text-slate-100 flex flex-col h-screen overflow-hidden select-none bg-slate-950">
 
-  <div id="welcome-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.22),_transparent_35%),radial-gradient(circle_at_bottom,_rgba(16,185,129,0.18),_transparent_30%),#020817] px-4 welcome-fade h-dvh min-h-dvh">
+  <div id="welcome-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.22),_transparent_35%),radial-gradient(circle_at_bottom,_rgba(16,185,129,0.18),_transparent_30%),#020817] px-4 welcome-fade" style="height: var(--app-vh, 1vh) * 100; min-height: var(--app-vh, 1vh) * 100;">
     <div class="w-full max-w-md text-center">
       <div class="mb-7">
         <div class="hero-glow mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-cyan-400 via-sky-500 to-emerald-400 text-3xl font-black text-slate-950 shadow-2xl">
@@ -163,7 +174,7 @@
     </div>
   </div>
 
-  <div id="app-shell" class="hidden h-dvh min-h-dvh w-full flex flex-col">
+  <div id="app-shell" class="hidden w-full flex flex-col" style="height: var(--app-vh, 1vh) * 100; min-height: var(--app-vh, 1vh) * 100;">
   <!-- Top Navigation Bar -->
   <header class="app-header bg-darkcard/90 backdrop-blur-md border-b border-darkborder px-2.5 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between shrink-0 z-30">
     <div class="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
@@ -215,6 +226,15 @@
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
     <script>
+      function updateViewportHeight() {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--app-vh', `${vh}px`);
+      }
+
+      window.addEventListener('resize', updateViewportHeight, { passive: true });
+      window.addEventListener('orientationchange', updateViewportHeight, { passive: true });
+      window.addEventListener('load', updateViewportHeight, { passive: true });
+
       // Set your Google OAuth Client ID here
       const GOOGLE_CLIENT_ID = '263498749634-kcdn25mabgrfiiebkju084d2eclkrve5.apps.googleusercontent.com';
 
