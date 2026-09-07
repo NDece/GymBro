@@ -78,6 +78,11 @@
       touch-action: none;
     }
 
+    .fixed.inset-0.z-50 {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
     main {
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -210,9 +215,6 @@
         <i id="sync-icon" class="fa-solid fa-cloud text-slate-400"></i>
         <span id="sync-text" class="hidden sm:inline">Locale</span>
       </button>
-      
-      <!-- Load backups from Cloud (small) -->
-      <button id="load-backup-btn" onclick="openCloudBackupList()" class="text-[10px] sm:text-xs px-1.5 py-1 sm:px-2 sm:py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-300">Backup</button>
 
       <!-- Google Login (small) -->
       <button id="google-login-btn" onclick="loginHandler()" class="text-[10px] sm:text-xs px-1.5 py-1 sm:px-2 sm:py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-300">Accedi</button>
@@ -370,14 +372,18 @@
         const icon = document.getElementById('sync-icon');
         const text = document.getElementById('sync-text');
         const onlineDot = document.getElementById('online-indicator');
-        if (isCloud) {
+        const hasDriveToken = !!(gapi && gapi.client && gapi.client.getToken && gapi.client.getToken());
+        const hasSavedGoogleToken = !!(localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token'));
+        const connected = typeof isCloud === 'boolean' ? isCloud : (hasDriveToken || hasSavedGoogleToken);
+
+        if (connected) {
           icon.className = 'fa-solid fa-cloud-arrow-up text-cyan-400';
           text.textContent = 'Cloud';
-          if (onlineDot) { onlineDot.className = 'w-3 h-3 rounded-full bg-emerald-400 border border-slate-800 ml-2'; }
+          if (onlineDot) { onlineDot.className = 'w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border border-slate-800'; }
         } else {
           icon.className = 'fa-solid fa-cloud text-slate-400';
           text.textContent = 'Locale';
-          if (onlineDot) { onlineDot.className = 'w-3 h-3 rounded-full bg-red-500 border border-slate-800 ml-2'; }
+          if (onlineDot) { onlineDot.className = 'w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500 border border-slate-800'; }
         }
       }
     </script>
