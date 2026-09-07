@@ -2336,18 +2336,65 @@ function handleSignoutClick() {
     }
 }
 
+function buildDriveSaveName(rawName) {
+  const base = String(rawName || '').trim();
+  const cleaned = base
+    .replace(/\.[^.]+$/i, '')
+    .replace(/[^a-zA-Z0-9_\- ]+/g, '')
+    .replace(/\s+/g, '_')
+    .toLowerCase();
+  const finalBase = cleaned && cleaned.length >= 4 ? cleaned : `${cleaned || 'backup'}_save`;
+  return `${finalBase.replace(/_+$/g, '')}.json`;
+}
+
+async function ensureDriveFolder(folderName, parentFolderId = null) {
+  const cleanName = String(folderName || '').trim();
+  if (!cleanName) throw new Error('Nome cartella non valido');
+
+  const query = parentFolderId
+    ? `'${parentFolderId}' in parents and name='${cleanName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
+    : `name='${cleanName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false and 'root' in parents`;
+
+  const res = await gapi.client.drive.files.list({
+    q: query,
+    fields: 'files(id, name)',
+    pageSize: 20
+  });
+
+  const folders = res.result.files || [];
+  if (folders.length > 0) return folders[0];
+
+  const metadata = {
+    name: cleanName,
+    mimeType: 'application/vnd.google-apps.folder'
+  };
+  if (parentFolderId) metadata.parents = [parentFolderId];
+
+  const created = await gapi.client.drive.files.create({
+    resource: metadata,
+    fields: 'id, name'
+  });
+  return created.result;
+}
+
+async function getGymBroSaveFolders() {
+  const appFolder = await ensureDriveFolder('GymBro App');
+  const savesFolder = await ensureDriveFolder('salvataggi', appFolder.id);
+  return { appFolderId: appFolder.id, savesFolderId: savesFolder.id };
+}
+
 // 5. SALVA su Google Drive
 async function salvaSuDrive() {
-  // Ask for filename (default YYYYMMDD)
-  const defaultName = new Date().toISOString().slice(0,10).replace(/-/g,'');
-  let fileName = prompt('Nome backup (lascia vuoto per default):', defaultName);
+  const defaultName = 'alim';
+  let fileName = prompt('Nome salvataggio (minimo 4 caratteri, es. alim, db, scheda):', defaultName);
   if (!fileName) fileName = defaultName;
-  if (!fileName.toLowerCase().endsWith('.json')) fileName = fileName + '.json';
 
+  const finalFileName = buildDriveSaveName(fileName);
   const datiApp = JSON.stringify(localStorage);
   try {
-    await uploadOrUpdateFile(fileName, new Blob([datiApp], { type: 'application/json' }), 'application/json');
-    alert('✅ Backup salvato con successo su Google Drive!');
+    const { savesFolderId } = await getGymBroSaveFolders();
+    await uploadOrUpdateFile(finalFileName, new Blob([datiApp], { type: 'application/json' }), 'application/json', savesFolderId);
+    alert('✅ Backup salvato con successo nella cartella GymBro App > salvataggi');
   } catch (err) {
     console.error('Errore salvataggio:', err);
     alert('❌ Errore nel salvataggio su Drive. Controlla la console.');
@@ -2356,21 +2403,20 @@ async function salvaSuDrive() {
 
 // 6. CARICA da Google Drive
 async function caricaDaDrive() {
-  // If called without args, open the backup list
   try {
-    const fileName = 'GymBro_Backup.json';
+    const { savesFolderId } = await getGymBroSaveFolders();
     const response = await gapi.client.drive.files.list({
-      q: `name='${fileName}' and trashed=false`,
+      q: `'${savesFolderId}' in parents and trashed=false and mimeType != 'application/vnd.google-apps.folder'`,
       fields: 'files(id, name, createdTime)',
       orderBy: 'createdTime desc',
-      pageSize: 50
+      pageSize: 100
     });
 
     const files = response.result.files || [];
     const list = document.getElementById('backup-list-items');
     list.innerHTML = '';
     if (files.length === 0) {
-      list.innerHTML = '<li class="text-slate-400">Nessun backup trovato</li>';
+      list.innerHTML = '<li class="text-slate-400">Nessun backup trovato nella cartella salvataggi</li>';
     } else {
       files.forEach(f => {
         const li = document.createElement('li');
@@ -2405,21 +2451,24 @@ async function loadBackupFile(fileId) {
 }
 
 // Generic upload or update file on Drive using REST upload endpoint
-async function uploadOrUpdateFile(fileName, blob, mimeType) {
+async function uploadOrUpdateFile(fileName, blob, mimeType, folderId = null) {
   const token = (gapi.client.getToken() && gapi.client.getToken().access_token) || null;
   if (!token) throw new Error('Not authorized');
 
-  // Find existing file
-  const listRes = await gapi.client.drive.files.list({ q: `name='${fileName.replace("'","\\'")}' and trashed=false`, fields: 'files(id, name)', pageSize: 1 });
+  const safeName = String(fileName || '').trim();
+  const query = folderId
+    ? `'${folderId}' in parents and name='${safeName.replace(/'/g, "\\'")}' and trashed=false`
+    : `name='${safeName.replace(/'/g, "\\'")}' and trashed=false`;
+
+  const listRes = await gapi.client.drive.files.list({ q: query, fields: 'files(id, name)', pageSize: 1 });
   const files = listRes.result.files || [];
-  const metadata = { name: fileName };
+  const metadata = { name: safeName };
+  if (folderId) metadata.parents = [folderId];
   let url, method;
   if (files.length > 0) {
-    // update existing
     url = `https://www.googleapis.com/upload/drive/v3/files/${files[0].id}`;
     method = 'PATCH';
   } else {
-    // create new
     url = 'https://www.googleapis.com/upload/drive/v3/files';
     method = 'POST';
   }
@@ -2438,10 +2487,11 @@ async function uploadOrUpdateFile(fileName, blob, mimeType) {
 }
 
 // Create a new file (always POST) useful for autosave snapshots
-async function uploadNewFile(fileName, blob, mimeType) {
+async function uploadNewFile(fileName, blob, mimeType, folderId = null) {
   const token = (gapi.client.getToken() && gapi.client.getToken().access_token) || null;
   if (!token) throw new Error('Not authorized');
   const metadata = { name: fileName };
+  if (folderId) metadata.parents = [folderId];
   const form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
   form.append('file', blob);
@@ -2485,13 +2535,14 @@ async function restoreFile(fileId) {
   } catch(err){ console.error(err); showToast('Errore ripristino'); }
 }
 
-// Save the food database to Drive with fixed name 'Database_GymBro.json'
+// Save the food database to Drive with fixed name inside the app save folder
 async function saveDatabaseToDrive() {
   const token = (gapi.client.getToken() && gapi.client.getToken().access_token) || null;
   if (!token) return;
   const db = JSON.stringify((appState.presets || []));
   localStorage.setItem('db_foods', db);
-  await uploadOrUpdateFile('Database_GymBro.json', new Blob([db], { type: 'application/json' }), 'application/json');
+  const { savesFolderId } = await getGymBroSaveFolders();
+  await uploadOrUpdateFile('alim_database.json', new Blob([db], { type: 'application/json' }), 'application/json', savesFolderId);
 }
 
 // Photo upload to Drive and index maintenance
@@ -2514,7 +2565,10 @@ async function handlePhotoUpload(event) {
   }
 }
 
-async function savePhotoIndexToDrive() { await uploadOrUpdateFile('PhotoIndex_GymBro.json', new Blob([localStorage.getItem('photo_index')||'{}'], { type: 'application/json' }), 'application/json'); }
+async function savePhotoIndexToDrive() {
+  const { savesFolderId } = await getGymBroSaveFolders();
+  await uploadOrUpdateFile('foto_index.json', new Blob([localStorage.getItem('photo_index')||'{}'], { type: 'application/json' }), 'application/json', savesFolderId);
+}
 
 function renderPhotoGallery(filterOpts) {
   const gallery = document.getElementById('photo-gallery');
