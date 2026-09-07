@@ -347,6 +347,11 @@
       }
 
       function enterApp() {
+        if (typeof loginHandler === 'function') {
+          loginHandler();
+          return;
+        }
+
         if (gapiInited && gisInited && typeof handleAuthClick === 'function') {
           handleAuthClick();
           return;
