@@ -251,8 +251,24 @@
         status.textContent = 'Stato: Connesso';
       }
 
+      let googleIdentityReady = false;
+
+      function ensureGoogleIdentityReady() {
+        if (!window.google || !window.google.accounts || !GOOGLE_CLIENT_ID) return false;
+        if (!googleIdentityReady) {
+          google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleLoggedIn });
+          googleIdentityReady = true;
+        }
+        return true;
+      }
+
       function enterApp() {
-        if (window.google && GOOGLE_CLIENT_ID) {
+        if (gapiInited && gisInited && typeof handleAuthClick === 'function') {
+          handleAuthClick();
+          return;
+        }
+
+        if (ensureGoogleIdentityReady()) {
           google.accounts.id.prompt();
           return;
         }
@@ -262,7 +278,7 @@
           return;
         }
 
-        openModal('cloud-modal');
+        showToast('Google non pronto: riprova più tardi', 'error');
       }
 
       function triggerGoogleSignIn() {
@@ -270,17 +286,12 @@
       }
 
       (function initGoogle() {
-        if (window.google && GOOGLE_CLIENT_ID) {
-          google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleLoggedIn });
-          const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
-          if (saved) {
-            const p = parseJwt(saved);
-            setCloudUserUI(p);
-            updateSyncStatus(true);
-          }
-        } else {
-          const btn = document.getElementById('google-login-btn');
-          if (btn) btn.innerText = 'Accedi';
+        ensureGoogleIdentityReady();
+        const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
+        if (saved) {
+          const p = parseJwt(saved);
+          setCloudUserUI(p);
+          updateSyncStatus(true);
         }
       })();
 
