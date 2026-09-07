@@ -2341,7 +2341,8 @@ function handleAuthClick() {
     if (btn) { btn.innerText = 'Disconnetti'; btn.onclick = handleSignoutClick; }
     const driveActions = document.getElementById('drive-actions');
     if (driveActions) driveActions.style.display = 'flex';
-    openModal('cloud-modal');
+    unlockApp();
+    closeModal('cloud-modal');
     // Automatically load backup list after successful auth
     try { await caricaDaDrive(); } catch(e) { console.warn('Auto-load backups failed', e); }
   };
