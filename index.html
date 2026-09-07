@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
   
   <style>
     /* Safe Area Insets for iOS devices like iPhone 15 Pro */
@@ -58,6 +59,10 @@
       background-color: #090d16;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       touch-action: manipulation;
+    }
+
+    .app-header {
+      padding-top: calc(0.5rem + env(safe-area-inset-top));
     }
 
     .welcome-fade {
@@ -160,7 +165,7 @@
 
   <div id="app-shell" class="hidden h-dvh min-h-dvh w-full flex flex-col">
   <!-- Top Navigation Bar -->
-  <header class="bg-darkcard/90 backdrop-blur-md border-b border-darkborder px-4 py-2 flex items-center justify-between shrink-0 z-30">
+  <header class="app-header bg-darkcard/90 backdrop-blur-md border-b border-darkborder px-4 py-2 flex items-center justify-between shrink-0 z-30">
     <div class="flex items-center space-x-2 min-w-0">
       <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-500 to-brand-accent flex items-center justify-center text-slate-950 font-black text-xl shadow-lg glow-cyan">
         <i class="fa-solid fa-bolt"></i>
@@ -889,15 +894,42 @@
 
   <!-- MODAL: BARCODE SCAN -->
   <div id="scan-product-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-start justify-center p-3 sm:p-4 hidden">
-    <div class="bg-darkcard border border-darkborder rounded-2xl p-4 w-full max-w-sm mt-10 shadow-2xl">
+    <div class="bg-darkcard border border-darkborder rounded-2xl p-4 w-full max-w-sm mt-4 sm:mt-10 shadow-2xl">
       <div class="flex justify-between items-center pb-2 border-b border-slate-800">
         <h3 class="text-base font-bold text-white flex items-center space-x-2">
           <i class="fa-solid fa-barcode text-amber-400"></i>
           <span>Scansiona prodotto</span>
         </h3>
-        <button onclick="closeModal('scan-product-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <button onclick="closeScanProductModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="space-y-3 pt-3">
+        <div id="barcode-camera-wrap" class="relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">
+          <video id="barcode-video" autoplay playsinline muted class="hidden w-full h-44 object-cover bg-black"></video>
+          <div id="barcode-camera-empty" class="flex h-44 items-center justify-center text-center text-slate-300">
+            <div>
+              <div class="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
+                <i class="fa-solid fa-camera"></i>
+              </div>
+              <div class="text-[11px] font-medium">Scansione camera</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="start-camera-btn" onclick="startBarcodeCamera()" class="flex-1 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 text-slate-950 font-bold text-xs py-2.5">
+            <i class="fa-solid fa-camera mr-1"></i> Fotocamera
+          </button>
+          <button id="stop-camera-btn" onclick="stopBarcodeCamera()" class="hidden flex-1 rounded-xl bg-slate-800 text-slate-200 font-bold text-xs py-2.5">
+            Chiudi
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2rem] text-slate-500">
+          <span class="h-px flex-1 bg-slate-700"></span>
+          <span>oppure</span>
+          <span class="h-px flex-1 bg-slate-700"></span>
+        </div>
+
         <label class="text-xs text-slate-400 block">Codice a barre</label>
         <input id="barcode-input" type="text" inputmode="numeric" placeholder="es. 3017624010701" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
         <button onclick="submitBarcodeLookup()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-sm shadow-lg">
@@ -2600,6 +2632,89 @@ function confirmAndTrashPhoto(fileId, name) {
 }
 
 // --- Food barcode scanning with Open Food Facts API ---
+let barcodeCameraReader = null;
+let barcodeCameraStream = null;
+
+async function startBarcodeCamera() {
+  const video = document.getElementById('barcode-video');
+  const emptyState = document.getElementById('barcode-camera-empty');
+  const startBtn = document.getElementById('start-camera-btn');
+  const stopBtn = document.getElementById('stop-camera-btn');
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Camera non disponibile sul tuo dispositivo');
+    return;
+  }
+
+  if (!window.ZXing) {
+    showToast('Scanner barcode non pronto, usa il codice manuale');
+    return;
+  }
+
+  try {
+    barcodeCameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+      audio: false
+    });
+
+    if (video) {
+      video.srcObject = barcodeCameraStream;
+      video.classList.remove('hidden');
+    }
+    if (emptyState) emptyState.classList.add('hidden');
+    if (startBtn) startBtn.classList.add('hidden');
+    if (stopBtn) stopBtn.classList.remove('hidden');
+
+    if (!barcodeCameraReader) {
+      barcodeCameraReader = new ZXing.BrowserMultiFormatReader();
+    }
+
+    try {
+      const result = await barcodeCameraReader.decodeFromVideoElement(video);
+      const text = result && result.getText ? result.getText() : '';
+      if (text) {
+        const input = document.getElementById('barcode-input');
+        if (input) input.value = text;
+        stopBarcodeCamera();
+        submitBarcodeLookup();
+      }
+    } catch (err) {
+      console.warn('Barcode camera active, waiting for scan...', err);
+    }
+  } catch (err) {
+    console.error('Unable to access camera:', err);
+    showToast('Impossibile usare la fotocamera. Inserisci il codice manualmente');
+  }
+}
+
+function stopBarcodeCamera() {
+  const video = document.getElementById('barcode-video');
+  const emptyState = document.getElementById('barcode-camera-empty');
+  const startBtn = document.getElementById('start-camera-btn');
+  const stopBtn = document.getElementById('stop-camera-btn');
+
+  if (barcodeCameraStream) {
+    barcodeCameraStream.getTracks().forEach(track => track.stop());
+    barcodeCameraStream = null;
+  }
+
+  if (video) {
+    video.srcObject = null;
+    video.classList.add('hidden');
+  }
+  if (emptyState) emptyState.classList.remove('hidden');
+  if (startBtn) startBtn.classList.remove('hidden');
+  if (stopBtn) stopBtn.classList.add('hidden');
+
+  if (barcodeCameraReader) {
+    try {
+      barcodeCameraReader.reset();
+    } catch (err) {
+      console.warn('Barcode reader reset warning', err);
+    }
+  }
+}
+
 function openScanProductModal() {
   const modal = document.getElementById('scan-product-modal');
   const input = document.getElementById('barcode-input');
@@ -2607,11 +2722,13 @@ function openScanProductModal() {
   if (input) {
     setTimeout(() => input.focus(), 80);
   }
+  stopBarcodeCamera();
 }
 
 function closeScanProductModal() {
   const modal = document.getElementById('scan-product-modal');
   if (modal) modal.classList.add('hidden');
+  stopBarcodeCamera();
 }
 
 async function submitBarcodeLookup() {
