@@ -1391,7 +1391,9 @@
         ? (savedGoogleProfile.name || savedGoogleProfile.given_name || savedGoogleProfile.email)
         : null;
 
-      if (user || savedGoogleProfile) {
+      const effectiveUser = user || savedGoogleProfile;
+
+      if (effectiveUser) {
         const displayName = (user && (user.displayName || user.email)) || googleDisplayName || 'Utente Google';
         const email = (user && (user.email || user.uid)) || (savedGoogleProfile && savedGoogleProfile.email) || '';
 
