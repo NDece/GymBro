@@ -300,16 +300,38 @@
 
       function setCloudUserUI(payload) {
         if (!payload) return;
-        const details = document.getElementById('auth-user-details');
-        const nameEl = document.getElementById('cloud-user-name');
-        const emailEl = document.getElementById('cloud-user-email');
-        const status = document.getElementById('auth-status');
         const userName = payload.name || payload.given_name || payload.email || 'Utente Google';
-        details.classList.remove('hidden');
-        document.getElementById('drive-actions').classList.remove('hidden');
-        nameEl.textContent = userName;
-        emailEl.textContent = payload.email || '';
-        status.textContent = 'Stato: Connesso';
+        const email = payload.email || '';
+        const details = document.getElementById('auth-user-details');
+        const driveActions = document.getElementById('drive-actions');
+        const status = document.getElementById('auth-status');
+
+        document.querySelectorAll('#cloud-user-name').forEach(el => {
+          el.textContent = userName;
+        });
+        document.querySelectorAll('#cloud-user-email').forEach(el => {
+          el.textContent = email;
+        });
+        document.querySelectorAll('#cloud-user-status').forEach(el => {
+          el.textContent = 'Accesso Google Drive attivo';
+          el.classList.remove('text-slate-400');
+          el.classList.add('text-emerald-400');
+        });
+
+        const cloudStatusIcon = document.getElementById('cloud-status-icon');
+        if (cloudStatusIcon) {
+          cloudStatusIcon.className = 'w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-400 text-lg flex items-center justify-center';
+          cloudStatusIcon.innerHTML = '<i class="fa-solid fa-cloud-check"></i>';
+        }
+
+        if (details) details.classList.remove('hidden');
+        if (driveActions) driveActions.classList.remove('hidden');
+        if (status) {
+          status.textContent = 'Stato: Connesso a Google Drive ✅';
+          status.style.color = 'green';
+        }
+
+        updateSyncStatus(true);
       }
 
       let googleIdentityReady = false;
@@ -392,13 +414,39 @@
         const connected = typeof isCloud === 'boolean' ? isCloud : (hasDriveToken || hasSavedGoogleToken);
 
         if (connected) {
-          icon.className = 'fa-solid fa-cloud-arrow-up text-cyan-400';
-          text.textContent = 'Cloud';
+          if (icon) icon.className = 'fa-solid fa-cloud-arrow-up text-cyan-400';
+          if (text) text.textContent = 'Cloud';
           if (onlineDot) { onlineDot.className = 'w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border border-slate-800'; }
+
+          const cloudStatusText = document.getElementById('cloud-user-status');
+          if (cloudStatusText) {
+            cloudStatusText.textContent = 'Accesso Google Drive attivo';
+            cloudStatusText.classList.remove('text-slate-400');
+            cloudStatusText.classList.add('text-emerald-400');
+          }
+
+          const cloudStatusIcon = document.getElementById('cloud-status-icon');
+          if (cloudStatusIcon) {
+            cloudStatusIcon.className = 'w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-400 text-lg flex items-center justify-center';
+            cloudStatusIcon.innerHTML = '<i class="fa-solid fa-cloud-check"></i>';
+          }
         } else {
-          icon.className = 'fa-solid fa-cloud text-slate-400';
-          text.textContent = 'Locale';
+          if (icon) icon.className = 'fa-solid fa-cloud text-slate-400';
+          if (text) text.textContent = 'Locale';
           if (onlineDot) { onlineDot.className = 'w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500 border border-slate-800'; }
+
+          const cloudStatusText = document.getElementById('cloud-user-status');
+          if (cloudStatusText) {
+            cloudStatusText.textContent = 'Salvataggio locale su browser';
+            cloudStatusText.classList.remove('text-emerald-400');
+            cloudStatusText.classList.add('text-slate-400');
+          }
+
+          const cloudStatusIcon = document.getElementById('cloud-status-icon');
+          if (cloudStatusIcon) {
+            cloudStatusIcon.className = 'w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-lg flex items-center justify-center';
+            cloudStatusIcon.innerHTML = '<i class="fa-solid fa-user-slash"></i>';
+          }
         }
       }
     </script>
@@ -1333,8 +1381,6 @@
       const syncIcon = document.getElementById('sync-icon');
       const syncText = document.getElementById('sync-text');
       const cloudIcon = document.getElementById('cloud-status-icon');
-      const cloudName = document.getElementById('cloud-user-name');
-      const cloudStatus = document.getElementById('cloud-user-status');
       const authActions = document.getElementById('auth-actions');
       const authDetails = document.getElementById('auth-user-details');
       const authEmail = document.getElementById('auth-user-email');
@@ -1345,25 +1391,48 @@
         ? (savedGoogleProfile.name || savedGoogleProfile.given_name || savedGoogleProfile.email)
         : null;
 
-      if (user) {
-        syncIcon.className = 'fa-solid fa-cloud-check text-cyan-400';
-        syncText.textContent = 'Cloud Sync';
-        cloudIcon.className = 'w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/40 text-cyan-400 text-lg flex items-center justify-center';
-        cloudIcon.innerHTML = '<i class="fa-solid fa-cloud-check"></i>';
-        cloudName.textContent = user.displayName || googleDisplayName || 'Utente Sincronizzato';
-        cloudStatus.textContent = 'I tuoi dati sono protetti e sincronizzati';
-        authActions.classList.add('hidden');
-        authDetails.classList.remove('hidden');
-        authEmail.textContent = user.email || user.uid;
+      if (user || savedGoogleProfile) {
+        const displayName = (user && (user.displayName || user.email)) || googleDisplayName || 'Utente Google';
+        const email = (user && (user.email || user.uid)) || (savedGoogleProfile && savedGoogleProfile.email) || '';
+
+        document.querySelectorAll('#cloud-user-name').forEach(el => {
+          el.textContent = displayName;
+        });
+        document.querySelectorAll('#cloud-user-status').forEach(el => {
+          el.textContent = 'Accesso Google Drive attivo';
+          el.classList.remove('text-slate-400');
+          el.classList.add('text-emerald-400');
+        });
+
+        if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-check text-cyan-400';
+        if (syncText) syncText.textContent = 'Cloud Sync';
+        if (cloudIcon) {
+          cloudIcon.className = 'w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-400 text-lg flex items-center justify-center';
+          cloudIcon.innerHTML = '<i class="fa-solid fa-cloud-check"></i>';
+        }
+        if (authActions) authActions.classList.add('hidden');
+        if (authDetails) authDetails.classList.remove('hidden');
+        if (authEmail) authEmail.textContent = email;
+        updateSyncStatus(true);
       } else {
-        syncIcon.className = 'fa-solid fa-cloud text-slate-500';
-        syncText.textContent = 'Locale';
-        cloudIcon.className = 'w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-lg flex items-center justify-center';
-        cloudIcon.innerHTML = '<i class="fa-solid fa-user-slash"></i>';
-        cloudName.textContent = googleDisplayName || 'Utente Ospite';
-        cloudStatus.textContent = googleDisplayName ? 'Accesso Google attivo' : 'Salvataggio locale su browser';
-        authActions.classList.remove('hidden');
-        authDetails.classList.add('hidden');
+        document.querySelectorAll('#cloud-user-name').forEach(el => {
+          el.textContent = 'Utente Ospite';
+        });
+        document.querySelectorAll('#cloud-user-status').forEach(el => {
+          el.textContent = 'Salvataggio locale su browser';
+          el.classList.remove('text-emerald-400');
+          el.classList.add('text-slate-400');
+        });
+
+        if (syncIcon) syncIcon.className = 'fa-solid fa-cloud text-slate-500';
+        if (syncText) syncText.textContent = 'Locale';
+        if (cloudIcon) {
+          cloudIcon.className = 'w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-lg flex items-center justify-center';
+          cloudIcon.innerHTML = '<i class="fa-solid fa-user-slash"></i>';
+        }
+        if (authActions) authActions.classList.remove('hidden');
+        if (authDetails) authDetails.classList.add('hidden');
+        updateSyncStatus(false);
       }
     }
 
