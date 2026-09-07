@@ -56,13 +56,14 @@
     html, body {
       height: 100%;
       min-height: var(--app-vh, 1vh) * 100;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       overscroll-behavior: none;
     }
 
     body {
       min-height: var(--app-vh, 1vh) * 100;
-      height: var(--app-vh, 1vh) * 100;
+      height: auto;
       padding-top: max(env(safe-area-inset-top), 0px);
       padding-bottom: max(env(safe-area-inset-bottom), 0px);
       padding-left: max(env(safe-area-inset-left), 0px);
@@ -70,6 +71,11 @@
       background-color: #090d16;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       touch-action: manipulation;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+      touch-action: none;
     }
 
     main {
@@ -1488,12 +1494,25 @@
       }
     }
 
+    function updateModalScrollLock() {
+      const activeModal = document.querySelector('.fixed.inset-0.z-50:not(.hidden)');
+      document.body.classList.toggle('modal-open', !!activeModal);
+    }
+
     // Modal Display Logic
     function openModal(modalId) {
-      document.getElementById(modalId).classList.remove('hidden');
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+      updateModalScrollLock();
     }
     function closeModal(modalId) {
-      document.getElementById(modalId).classList.add('hidden');
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+      updateModalScrollLock();
     }
 
     // Toast Notification System
@@ -3075,6 +3094,7 @@ function openScanProductModal() {
   const modal = document.getElementById('scan-product-modal');
   const input = document.getElementById('barcode-input');
   if (modal) modal.classList.remove('hidden');
+  updateModalScrollLock();
   if (input) {
     setTimeout(() => input.focus(), 80);
   }
@@ -3084,6 +3104,7 @@ function openScanProductModal() {
 function closeScanProductModal() {
   const modal = document.getElementById('scan-product-modal');
   if (modal) modal.classList.add('hidden');
+  updateModalScrollLock();
   stopBarcodeCamera();
 }
 
