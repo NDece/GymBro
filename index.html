@@ -913,6 +913,9 @@
               <div class="text-[11px] font-medium">Scansione camera</div>
             </div>
           </div>
+          <div id="barcode-scan-status" class="pointer-events-none absolute inset-x-3 bottom-3 hidden rounded-full bg-emerald-500/90 px-3 py-1.5 text-center text-[10px] font-bold text-slate-950 shadow-lg">
+            Codice letto
+          </div>
           <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div class="h-28 w-48 rounded-2xl border-2 border-amber-400/80 shadow-[0_0_24px_rgba(251,191,36,0.35)]"></div>
           </div>
@@ -921,6 +924,9 @@
         <div class="flex gap-2">
           <button id="start-camera-btn" onclick="startBarcodeCamera()" class="flex-1 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 text-slate-950 font-bold text-[11px] py-2.5">
             <i class="fa-solid fa-camera mr-1"></i> Camera
+          </button>
+          <button id="flash-camera-btn" onclick="toggleBarcodeFlash()" class="flex-1 rounded-xl bg-slate-800 text-slate-200 font-bold text-[11px] py-2.5">
+            <i class="fa-solid fa-bolt mr-1"></i> Flash
           </button>
           <button id="stop-camera-btn" onclick="stopBarcodeCamera()" class="hidden flex-1 rounded-xl bg-slate-800 text-slate-200 font-bold text-[11px] py-2.5">
             Chiudi
@@ -2639,6 +2645,7 @@ let barcodeCameraReader = null;
 let barcodeCameraStream = null;
 let barcodeScanActive = false;
 let barcodeScanLoopTimer = null;
+let barcodeFlashEnabled = false;
 
 function normalizeBarcodeValue(value) {
   if (!value) return '';
@@ -2648,20 +2655,91 @@ function normalizeBarcodeValue(value) {
   return cleaned;
 }
 
+function showBarcodeReadFeedback() {
+  const status = document.getElementById('barcode-scan-status');
+  const wrap = document.getElementById('barcode-camera-wrap');
+  if (status) {
+    status.classList.remove('hidden');
+  }
+  if (wrap) {
+    wrap.classList.remove('border-slate-700');
+    wrap.classList.add('border-emerald-400', 'ring-2', 'ring-emerald-400/80', 'shadow-[0_0_22px_rgba(16,185,129,0.35)]');
+  }
+  setTimeout(() => {
+    if (status) status.classList.add('hidden');
+    if (wrap) {
+      wrap.classList.remove('border-emerald-400', 'ring-2', 'ring-emerald-400/80', 'shadow-[0_0_22px_rgba(16,185,129,0.35)]');
+      wrap.classList.add('border-slate-700');
+    }
+  }, 1200);
+}
+
+async function toggleBarcodeFlash() {
+  const flashBtn = document.getElementById('flash-camera-btn');
+  if (!barcodeCameraStream) {
+    showToast('Apri prima la fotocamera');
+    return;
+  }
+
+  const track = barcodeCameraStream.getVideoTracks && barcodeCameraStream.getVideoTracks()[0];
+  if (!track || !track.getCapabilities) {
+    showToast('Flash non supportato su questo dispositivo');
+    return;
+  }
+
+  const capabilities = track.getCapabilities();
+  if (!capabilities || !('torch' in capabilities)) {
+    showToast('Flash non supportato su questo dispositivo');
+    return;
+  }
+
+  barcodeFlashEnabled = !barcodeFlashEnabled;
+  try {
+    await track.applyConstraints({
+      advanced: [{ torch: barcodeFlashEnabled }]
+    });
+    if (flashBtn) {
+      flashBtn.classList.toggle('bg-amber-500', barcodeFlashEnabled);
+      flashBtn.classList.toggle('text-slate-950', barcodeFlashEnabled);
+      flashBtn.classList.toggle('bg-slate-800', !barcodeFlashEnabled);
+      flashBtn.classList.toggle('text-slate-200', !barcodeFlashEnabled);
+      flashBtn.innerHTML = barcodeFlashEnabled
+        ? '<i class="fa-solid fa-bolt mr-1"></i> Flash on'
+        : '<i class="fa-solid fa-bolt mr-1"></i> Flash';
+    }
+  } catch (err) {
+    console.warn('Torch not available', err);
+    showToast('Flash non disponibile');
+  }
+}
+
 function handleBarcodeScanResult(text) {
   const normalized = normalizeBarcodeValue(text);
   if (normalized && normalized.length >= 8) {
     const input = document.getElementById('barcode-input');
     if (input) input.value = normalized;
-    stopBarcodeCamera();
-    submitBarcodeLookup();
+    showBarcodeReadFeedback();
+    setTimeout(() => {
+      stopBarcodeCamera();
+      submitBarcodeLookup();
+    }, 500);
     return;
   }
 
   if (text) {
     console.warn('Scansione camera non valida per barcode prodotto:', text);
-    showToast('Codice non valido. Prova a inserirlo manualmente');
-    stopBarcodeCamera();
+    const wrap = document.getElementById('barcode-camera-wrap');
+    if (wrap) {
+      wrap.classList.remove('border-slate-700');
+      wrap.classList.add('border-red-400', 'ring-2', 'ring-red-400/80');
+      setTimeout(() => {
+        wrap.classList.remove('border-red-400', 'ring-2', 'ring-red-400/80');
+        wrap.classList.add('border-slate-700');
+      }, 600);
+    }
+    if (barcodeScanActive) {
+      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 350);
+    }
     return;
   }
 
@@ -2680,14 +2758,14 @@ async function readBarcodeFromCameraLoop() {
   try {
     const result = await Promise.race([
       barcodeCameraReader.decodeFromVideoElement(video),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('barcode-timeout')), 1400))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('barcode-timeout')), 1800))
     ]);
 
     const text = result && result.getText ? result.getText() : '';
     handleBarcodeScanResult(text);
   } catch (err) {
     if (barcodeScanActive) {
-      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 250);
+      barcodeScanLoopTimer = setTimeout(() => readBarcodeFromCameraLoop(), 300);
     }
   }
 }
@@ -2710,16 +2788,22 @@ async function startBarcodeCamera() {
 
   try {
     barcodeScanActive = true;
-    barCodeScanLoopTimer = null;
+    barcodeFlashEnabled = false;
+    barcodeScanLoopTimer = null;
 
     barcodeCameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
+      video: {
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
       audio: false
     });
 
     if (video) {
       video.srcObject = barcodeCameraStream;
       video.classList.remove('hidden');
+      await video.play().catch(() => {});
     }
     if (emptyState) emptyState.classList.add('hidden');
     if (startBtn) startBtn.classList.add('hidden');
@@ -2729,6 +2813,15 @@ async function startBarcodeCamera() {
       barcodeCameraReader = new ZXing.BrowserMultiFormatReader();
     }
 
+    const flashBtn = document.getElementById('flash-camera-btn');
+    if (flashBtn) {
+      flashBtn.classList.remove('hidden');
+      flashBtn.classList.remove('bg-amber-500', 'text-slate-950');
+      flashBtn.classList.add('bg-slate-800', 'text-slate-200');
+      flashBtn.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i> Flash';
+    }
+
+    toggleBarcodeFlash();
     readBarcodeFromCameraLoop();
   } catch (err) {
     console.error('Unable to access camera:', err);
@@ -2741,6 +2834,7 @@ function stopBarcodeCamera() {
   const emptyState = document.getElementById('barcode-camera-empty');
   const startBtn = document.getElementById('start-camera-btn');
   const stopBtn = document.getElementById('stop-camera-btn');
+  const flashBtn = document.getElementById('flash-camera-btn');
 
   barcodeScanActive = false;
   if (barcodeScanLoopTimer) {
@@ -2749,9 +2843,17 @@ function stopBarcodeCamera() {
   }
 
   if (barcodeCameraStream) {
+    const track = barcodeCameraStream.getVideoTracks && barcodeCameraStream.getVideoTracks()[0];
+    if (track && track.getCapabilities && 'torch' in track.getCapabilities()) {
+      try {
+        track.applyConstraints({ advanced: [{ torch: false }] });
+      } catch (err) {}
+    }
     barcodeCameraStream.getTracks().forEach(track => track.stop());
     barcodeCameraStream = null;
   }
+
+  barcodeFlashEnabled = false;
 
   if (video) {
     video.srcObject = null;
@@ -2760,6 +2862,11 @@ function stopBarcodeCamera() {
   if (emptyState) emptyState.classList.remove('hidden');
   if (startBtn) startBtn.classList.remove('hidden');
   if (stopBtn) stopBtn.classList.add('hidden');
+  if (flashBtn) {
+    flashBtn.classList.remove('bg-amber-500', 'text-slate-950');
+    flashBtn.classList.add('bg-slate-800', 'text-slate-200');
+    flashBtn.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i> Flash';
+  }
 
   if (barcodeCameraReader) {
     try {
