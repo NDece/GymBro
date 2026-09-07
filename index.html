@@ -979,6 +979,54 @@
     </div>
   </div>
 
+  <!-- MODAL: NUTRITION PROPOSAL -->
+  <div id="nutrition-proposal-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-utensils text-emerald-400"></i>
+          <span>Proposta nutrizione</span>
+        </h3>
+        <button onclick="closeModal('nutrition-proposal-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div id="recognize-source" class="rounded-xl border border-slate-700 bg-slate-900/60 p-3 text-xs text-slate-200"></div>
+
+        <form onsubmit="saveRecognizedNutrition(event)" class="space-y-3">
+          <div>
+            <label class="text-[10px] uppercase tracking-[0.2rem] text-slate-400 block mb-1">Nome prodotto</label>
+            <input id="prop-name" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="text-[10px] text-rose-400 block mb-1">Kcal</label>
+              <input id="prop-kcal" type="number" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-rose-400 block mb-1">Proteine</label>
+              <input id="prop-p" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-amber-400 block mb-1">Carbo</label>
+              <input id="prop-c" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[10px] text-blue-400 block mb-1">Grassi</label>
+            <input id="prop-f" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 font-bold text-sm shadow-lg">
+            Salva nel database
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: TARGET NUTRITION -->
   <div id="target-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-darkcard border border-darkborder rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
@@ -2993,25 +3041,37 @@ async function scanFoodByBarcode() {
 }
 
 function openNutritionProposalModal(data, dataUrl) {
-  document.getElementById('recognize-source').innerHTML = '';
+  const sourceEl = document.getElementById('recognize-source');
+  const modal = document.getElementById('nutrition-proposal-modal');
+  const nameInput = document.getElementById('prop-name');
+  const kcalInput = document.getElementById('prop-kcal');
+  const pInput = document.getElementById('prop-p');
+  const cInput = document.getElementById('prop-c');
+  const fInput = document.getElementById('prop-f');
+
+  if (!sourceEl || !modal || !nameInput || !kcalInput || !pInput || !cInput || !fInput) {
+    showToast('Modulo proposta nutrizione non disponibile');
+    return;
+  }
+
+  sourceEl.innerHTML = '';
 
   if (dataUrl) {
     const img = document.createElement('img');
     img.src = dataUrl;
     img.className = 'w-24 h-24 object-contain rounded mb-2';
-    document.getElementById('recognize-source').appendChild(img);
+    sourceEl.appendChild(img);
   }
 
   const product = data && data.product ? data.product : null;
   const nutriments = product && product.nutriments ? product.nutriments : (data && data.nutriments ? data.nutriments : {});
-
-  const productName = product && (product.product_name || product.generic_name) ? (product.product_name || product.generic_name) : (data.labels && data.labels[0] ? data.labels[0].description : 'Alimento');
-  const labels = (data.labels || []).map(l => l.description).slice(0, 3).join(', ');
+  const productName = product && (product.product_name || product.generic_name) ? (product.product_name || product.generic_name) : (data && data.labels && data.labels[0] ? data.labels[0].description : 'Alimento');
+  const labels = (data && data.labels ? data.labels : []).map(l => l.description).slice(0, 3).join(', ');
 
   if (labels) {
-    document.getElementById('recognize-source').append('Prodotto: ' + labels);
+    sourceEl.append('Prodotto: ' + labels);
   } else if (productName) {
-    document.getElementById('recognize-source').append('Prodotto: ' + productName);
+    sourceEl.append('Prodotto: ' + productName);
   }
 
   const kcalValue = Number(nutriments['energy-kcal_100g'] ?? nutriments['energy-kcal'] ?? nutriments['energy_100g'] ?? 0);
@@ -3019,11 +3079,11 @@ function openNutritionProposalModal(data, dataUrl) {
   const cValue = Number(nutriments['carbohydrates_100g'] ?? nutriments['carbohydrates'] ?? 0);
   const fValue = Number(nutriments['fat_100g'] ?? nutriments['fat'] ?? 0);
 
-  document.getElementById('prop-name').value = productName;
-  document.getElementById('prop-kcal').value = kcalValue ? Math.round(kcalValue) : '';
-  document.getElementById('prop-p').value = pValue ? Math.round(pValue) : '';
-  document.getElementById('prop-c').value = cValue ? Math.round(cValue) : '';
-  document.getElementById('prop-f').value = fValue ? Math.round(fValue) : '';
+  nameInput.value = productName || '';
+  kcalInput.value = kcalValue ? Math.round(kcalValue) : '';
+  pInput.value = pValue ? Math.round(pValue) : '';
+  cInput.value = cValue ? Math.round(cValue) : '';
+  fInput.value = fValue ? Math.round(fValue) : '';
 
   openModal('nutrition-proposal-modal');
 }
