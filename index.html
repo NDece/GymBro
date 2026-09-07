@@ -282,6 +282,7 @@
         const payload = parseJwt(idToken);
         unlockApp();
         setCloudUserUI(payload);
+        updateAuthUI({ displayName: payload && (payload.name || payload.given_name || payload.email), email: payload && payload.email });
         showToast('Accesso Google effettuato', 'success');
         updateSyncStatus(true);
         try { closeModal('cloud-modal'); } catch(e){}
@@ -368,15 +369,30 @@
         enterApp();
       }
 
+      function refreshAuthUIFromStorage() {
+        const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
+        if (!saved) {
+          updateAuthUI(null);
+          return;
+        }
+
+        const p = parseJwt(saved);
+        if (p) {
+          setCloudUserUI(p);
+          updateAuthUI({ displayName: p.name || p.given_name || p.email, email: p.email });
+          updateSyncStatus(true);
+          return;
+        }
+
+        updateAuthUI(null);
+      }
+
       (function initGoogle() {
         ensureGoogleIdentityReady();
-        const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
-        if (saved) {
-          const p = parseJwt(saved);
-          setCloudUserUI(p);
-          updateSyncStatus(true);
-        }
+        refreshAuthUIFromStorage();
       })();
+
+      window.addEventListener('DOMContentLoaded', refreshAuthUIFromStorage, { once: true });
 
       async function autoSaveToCloud(payload) {
         const idToken = sessionStorage.getItem('google_id_token');
