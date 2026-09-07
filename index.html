@@ -2809,36 +2809,57 @@ function handleBarcodeScanResult(text) {
 
 function startBarcodeReaderLoop() {
   const video = document.getElementById('barcode-video');
-  if (!video || !barcodeCameraReader || !barcodeScanActive) return;
+  if (!video || !barcodeCameraStream || !barcodeScanActive) return;
 
   if (barcodeCameraControls && typeof barcodeCameraControls.stop === 'function') {
-    try { barcodeCameraControls.stop(); } catch (err) { console.warn('Existing barcode control stop failed', err); }
+    try { barcodeCameraControls.stop(); } catch (err) {}
   }
 
   barcodeCameraControls = null;
 
+  const decodeCallback = (result, error, controls) => {
+    if (!barcodeScanActive) {
+      if (controls && typeof controls.stop === 'function') {
+        try { controls.stop(); } catch (err) {}
+      }
+      return;
+    }
+
+    if (result) {
+      const text = result.getText ? result.getText() : '';
+      barcodeCameraControls = controls || null;
+      handleBarcodeScanResult(text);
+      return;
+    }
+
+    if (error && error.name && error.name !== 'NotFoundException') {
+      console.warn('Barcode decode warning:', error);
+    }
+  };
+
   try {
-    barcodeCameraReader.decodeFromVideoElement(video, (result, error, controls) => {
-      if (!barcodeScanActive) {
-        if (controls && typeof controls.stop === 'function') {
-          try { controls.stop(); } catch (err) {}
-        }
-        return;
-      }
+    if (barcodeCameraReader && typeof barcodeCameraReader.decodeFromStream === 'function') {
+      barcodeCameraReader.decodeFromStream(barcodeCameraStream, video, decodeCallback);
+      return;
+    }
 
-      if (result) {
-        const text = result.getText ? result.getText() : '';
-        barcodeCameraControls = controls || null;
-        handleBarcodeScanResult(text);
-        return;
-      }
+    if (barcodeCameraReader && typeof barcodeCameraReader.decodeFromVideoElement === 'function') {
+      barcodeCameraReader.decodeFromVideoElement(video, decodeCallback);
+      return;
+    }
 
-      if (error && error.name && error.name !== 'NotFoundException') {
-        console.warn('Barcode decode warning:', error);
-      }
-    });
+    const fallbackReader = new ZXing.BrowserMultiFormatReader();
+    barcodeCameraReader = fallbackReader;
+    fallbackReader.decodeFromStream(barcodeCameraStream, video, decodeCallback);
   } catch (err) {
-    console.warn('Barcode decode loop setup failed', err);
+    console.warn('Barcode decode loop setup failed, retrying with video fallback', err);
+    try {
+      if (barcodeCameraReader && typeof barcodeCameraReader.decodeFromVideoElement === 'function') {
+        barcodeCameraReader.decodeFromVideoElement(video, decodeCallback);
+      }
+    } catch (fallbackErr) {
+      console.warn('Barcode decode fallback also failed', fallbackErr);
+    }
   }
 }
 
@@ -2896,6 +2917,10 @@ async function startBarcodeCamera() {
 
     if (!barcodeCameraReader) {
       barcodeCameraReader = new ZXing.BrowserMultiFormatReader();
+    }
+
+    if (barcodeCameraReader && typeof barcodeCameraReader.reset === 'function') {
+      try { barcodeCameraReader.reset(); } catch (err) {}
     }
 
     const flashBtn = document.getElementById('flash-camera-btn');
