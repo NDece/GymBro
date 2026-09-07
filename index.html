@@ -2656,10 +2656,11 @@ function normalizeBarcodeValue(value) {
   return cleaned;
 }
 
-function showBarcodeReadFeedback() {
+function showBarcodeReadFeedback(code = '') {
   const status = document.getElementById('barcode-scan-status');
   const wrap = document.getElementById('barcode-camera-wrap');
   if (status) {
+    status.textContent = code ? `Codice letto: ${code}` : 'Codice letto';
     status.classList.remove('hidden');
   }
   if (wrap) {
@@ -2667,12 +2668,15 @@ function showBarcodeReadFeedback() {
     wrap.classList.add('border-emerald-400', 'ring-2', 'ring-emerald-400/80', 'shadow-[0_0_22px_rgba(16,185,129,0.35)]');
   }
   setTimeout(() => {
-    if (status) status.classList.add('hidden');
+    if (status) {
+      status.textContent = 'Codice letto';
+      status.classList.add('hidden');
+    }
     if (wrap) {
       wrap.classList.remove('border-emerald-400', 'ring-2', 'ring-emerald-400/80', 'shadow-[0_0_22px_rgba(16,185,129,0.35)]');
       wrap.classList.add('border-slate-700');
     }
-  }, 1200);
+  }, 1500);
 }
 
 async function toggleBarcodeFlash() {
@@ -2719,11 +2723,12 @@ function handleBarcodeScanResult(text) {
   if (normalized && normalized.length >= 8) {
     const input = document.getElementById('barcode-input');
     if (input) input.value = normalized;
-    showBarcodeReadFeedback();
+    showBarcodeReadFeedback(normalized);
+    showToast(`Codice letto: ${normalized}`, 'fa-check-circle');
     setTimeout(() => {
       stopBarcodeCamera();
       submitBarcodeLookup();
-    }, 500);
+    }, 700);
     return;
   }
 
@@ -2908,6 +2913,33 @@ function closeScanProductModal() {
   stopBarcodeCamera();
 }
 
+async function fetchOpenFoodFactsProduct(barcode) {
+  const endpoints = [
+    `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`,
+    `https://world.openfoodfacts.org/api/v2/search?code=${encodeURIComponent(barcode)}&fields=product_name,generic_name,nutriments,code,brands,quantity`
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, { cache: 'no-store' });
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      if (data && data.status === 1 && data.product) {
+        return data.product;
+      }
+
+      if (data && data.products && data.products.length) {
+        return data.products[0];
+      }
+    } catch (err) {
+      console.warn('Open Food Facts probe failed:', endpoint, err);
+    }
+  }
+
+  return null;
+}
+
 async function submitBarcodeLookup() {
   const input = document.getElementById('barcode-input');
   const barcode = normalizeBarcodeValue(input ? input.value : '');
@@ -2922,25 +2954,17 @@ async function submitBarcodeLookup() {
   showToast('Ricerca nutrizione in corso...');
 
   try {
-    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`);
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-    if (!data || data.status !== 1 || !data.product) {
+    const product = await fetchOpenFoodFactsProduct(barcode);
+    if (!product || !product.nutriments) {
       showToast('Prodotto non trovato. Controlla il codice a barre');
       return;
     }
-
-    const product = data.product;
-    const nutriments = product.nutriments || {};
 
     const payload = {
       labels: [{ description: product.product_name || product.generic_name || 'Prodotto' }],
       texts: [],
       product: product,
-      nutriments: nutriments
+      nutriments: product.nutriments || {}
     };
 
     openNutritionProposalModal(payload);
