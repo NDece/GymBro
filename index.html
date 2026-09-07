@@ -2111,9 +2111,22 @@ function gapiLoaded() {
 }
 
 async function initializeGapiClient() {
-    await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
-    gapiInited = true;
-    maybeEnableButtons();
+    try {
+      await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
+      await gapi.client.load('drive', 'v3');
+      gapiInited = true;
+      maybeEnableButtons();
+      if (!gapi.client.getToken()) {
+        setTimeout(() => {
+          if (document.readyState === 'complete') {
+            requestGoogleAccessOnStartup();
+          }
+        }, 600);
+      }
+    } catch (err) {
+      console.error('GAPI init failed:', err);
+      showToast('Google non disponibile al momento');
+    }
 }
 
 // 2. Inizializzazione GIS (Google Identity)
@@ -2125,6 +2138,7 @@ function gisLoaded() {
     });
     gisInited = true;
     maybeEnableButtons();
+    setTimeout(() => requestGoogleAccessOnStartup(), 700);
 }
 
 function maybeEnableButtons() {
@@ -2132,6 +2146,16 @@ function maybeEnableButtons() {
     const btn = document.getElementById('google-login-btn');
     if (btn) btn.style.visibility = 'visible';
     }
+}
+
+function requestGoogleAccessOnStartup() {
+  if (!tokenClient || !gisInited) return;
+  if (gapi.client && gapi.client.getToken()) return;
+  try {
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+  } catch (err) {
+    console.warn('Google access prompt skipped on startup:', err);
+  }
 }
 
   // Unified login handler used by header button
@@ -2158,8 +2182,8 @@ function maybeEnableButtons() {
     }
     // If not authorized, trigger auth
     if (!gapi.client.getToken()) {
+      openModal('cloud-modal');
       handleAuthClick();
-      // after auth, user can click again to load backups
       return;
     }
     // Load list
@@ -2168,6 +2192,12 @@ function maybeEnableButtons() {
 
 // 3. Gestione Login
 function handleAuthClick() {
+  if (!tokenClient || !gisInited) {
+    showToast('Google non pronto: riprova più tardi', 'error');
+    openModal('cloud-modal');
+    return;
+  }
+
   tokenClient.callback = async (resp) => {
     if (resp.error !== undefined) {
       console.error('OAuth error', resp);
@@ -2178,7 +2208,9 @@ function handleAuthClick() {
     document.getElementById('auth-status').style.color = 'green';
     const btn = document.getElementById('google-login-btn');
     if (btn) { btn.innerText = 'Disconnetti'; btn.onclick = handleSignoutClick; }
-    document.getElementById('drive-actions').style.display = 'flex';
+    const driveActions = document.getElementById('drive-actions');
+    if (driveActions) driveActions.style.display = 'flex';
+    openModal('cloud-modal');
     // Automatically load backup list after successful auth
     try { await caricaDaDrive(); } catch(e) { console.warn('Auto-load backups failed', e); }
   };
@@ -2200,7 +2232,8 @@ function handleSignoutClick() {
         document.getElementById('auth-status').style.color = '#666';
         const btn = document.getElementById('google-login-btn');
         if (btn) { btn.innerText = 'Accedi'; btn.onclick = handleAuthClick; }
-        document.getElementById('drive-actions').style.display = 'none';
+        const driveActions = document.getElementById('drive-actions');
+        if (driveActions) driveActions.style.display = 'none';
     }
 }
 
@@ -2424,22 +2457,40 @@ async function handleFoodPhotoUpload(event) {
     reader.onload = async () => {
       const dataUrl = reader.result;
       const b64 = dataUrl.split(',')[1];
-      const res = await fetch('/api/recognize', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ imageBase64: b64 }) });
-      if (!res.ok) {
-        let errText = `Errore riconoscimento (${res.status})`;
-        try {
-          const errJson = await res.json();
-          if (errJson && errJson.message) errText += ': ' + errJson.message;
-        } catch(e){}
-        console.error('recognize failed', res.status);
-        showToast(errText);
-        return;
+      try {
+        const res = await fetch('/api/recognize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: b64 })
+        });
+
+        if (!res.ok) {
+          const fallbackData = {
+            labels: [{ description: file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ') || 'Alimento' }],
+            texts: []
+          };
+          console.warn('Recognition endpoint unavailable, using manual fallback. Status:', res.status);
+          openNutritionProposalModal(fallbackData, dataUrl);
+          showToast('Backend non disponibile: inserisci i dati manualmente', 'warning');
+          return;
+        }
+
+        const json = await res.json();
+        openNutritionProposalModal(json, dataUrl);
+      } catch (networkErr) {
+        console.warn('Recognition fetch failed, using manual fallback:', networkErr);
+        openNutritionProposalModal({
+          labels: [{ description: file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ') || 'Alimento' }],
+          texts: []
+        }, dataUrl);
+        showToast('Riconoscimento non disponibile, inserisci manualmente', 'warning');
       }
-      const json = await res.json();
-      openNutritionProposalModal(json, dataUrl);
     };
     reader.readAsDataURL(file);
-  } catch(err) { console.error(err); showToast('Errore caricamento immagine'); }
+  } catch(err) {
+    console.error(err);
+    showToast('Errore caricamento immagine');
+  }
 }
 
 function openNutritionProposalModal(data, dataUrl) {
