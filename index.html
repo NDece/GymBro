@@ -357,28 +357,37 @@
         return true;
       }
 
-      window.enterApp = function() {
+      function enterApp() {
         const googleReady = !!(window.google && window.google.accounts && GOOGLE_CLIENT_ID);
         const driveReady = !!(window.gapiInited && window.gisInited);
 
         try {
-          if (driveReady && typeof handleAuthClick === 'function') {
+          if (typeof loginHandler === 'function' && (driveReady || googleReady)) {
+            loginHandler();
+          } else if (driveReady && typeof handleAuthClick === 'function') {
             handleAuthClick();
-            return;
-          }
-
-          if (googleReady && typeof ensureGoogleIdentityReady === 'function') {
-            if (ensureGoogleIdentityReady()) {
-              google.accounts.id.prompt();
-              return;
+          } else if (ensureGoogleIdentityReady()) {
+            google.accounts.id.prompt();
+          } else if (typeof loginWithGoogle === 'function') {
+            const hasAuth = !!(window.firebaseApp || window.auth || localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token'));
+            if (hasAuth) {
+              loginWithGoogle();
             }
           }
         } catch (err) {
-          console.warn('Google enter flow failed:', err);
+          console.warn('Google enter flow failed, falling back to local access:', err);
         }
 
-        showToast('Google non pronto: devi accedere per entrare', 'error');
-      };
+        unlockApp();
+        const hasSavedGoogle = !!(localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token'));
+        if (hasSavedGoogle) {
+          showToast('Accesso Google trovato: app aperta', 'success');
+        } else if (googleReady || driveReady) {
+          showToast('Tentativo Google avviato', 'info');
+        } else {
+          showToast('Google non disponibile: accesso locale attivo', 'info');
+        }
+      }
 
       function triggerGoogleSignIn() {
         enterApp();
@@ -3601,7 +3610,7 @@ function requestGoogleAccessOnStartup() {
 }
 
   // Unified login handler used by header button
-  window.loginHandler = function() {
+  function loginHandler() {
     const driveReady = !!(window.gapiInited && window.gisInited);
     // Prefer Drive OAuth flow when GAPI/GIS initialized
     if (driveReady) {
@@ -3614,7 +3623,7 @@ function requestGoogleAccessOnStartup() {
       return;
     }
     showToast('Servizi Google non pronti, riprova fra un attimo');
-  };
+  }
 
   // Open cloud modal and list backups (called by header button)
   function openCloudBackupList() {
