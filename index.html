@@ -851,6 +851,33 @@
           <canvas id="nutritionProgressChart"></canvas>
         </div>
       </div>
+
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-lg">
+        <div class="flex justify-between items-center gap-3">
+          <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+            <i class="fa-solid fa-heart-pulse text-rose-400"></i>
+            <span>Trend Stato Salute</span>
+          </h3>
+          <div class="flex gap-2 items-center">
+            <select id="wellness-metric-filter" onchange="updateWellnessTrendChart()" class="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] rounded-lg px-2 py-1.5 focus:outline-none">
+              <option value="sleep">Sonno</option>
+              <option value="stress">Stress</option>
+              <option value="recovery">Recupero</option>
+              <option value="mood">Umore</option>
+              <option value="readiness">Readiness</option>
+            </select>
+            <select id="wellness-range-filter" onchange="updateWellnessTrendChart()" class="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] rounded-lg px-2 py-1.5 focus:outline-none">
+              <option value="day">Giorno</option>
+              <option value="week">Settimana</option>
+              <option value="month">Mese</option>
+              <option value="year">Anno</option>
+            </select>
+          </div>
+        </div>
+        <div class="relative h-56 w-full">
+          <canvas id="wellnessTrendChart"></canvas>
+        </div>
+      </div>
     </section>
 
     <!-- ========================================== -->
@@ -1810,6 +1837,8 @@
       document.getElementById('workout-date').value = todayStr;
       document.getElementById('nutrition-date').value = todayStr;
       document.getElementById('body-date').value = todayStr;
+      const wellnessDate = document.getElementById('wellness-date');
+      if (wellnessDate) wellnessDate.value = todayStr;
 
       const planContainer = document.getElementById('plan-exercises-container');
       if (planContainer && planContainer.children.length === 0) {
@@ -2522,7 +2551,8 @@
 
     function saveWellnessEntry(e) {
       e.preventDefault();
-      const date = document.getElementById('wellness-date').value;
+      const wellnessDateInput = document.getElementById('wellness-date');
+      const date = (wellnessDateInput && wellnessDateInput.value) ? wellnessDateInput.value : new Date().toISOString().split('T')[0];
       const entry = {
         id: 'wellness_' + Date.now(),
         date,
@@ -2534,10 +2564,14 @@
         notes: document.getElementById('wellness-notes').value.trim()
       };
 
-      appState.wellness = appState.wellness.filter(item => item.date !== date);
+      appState.wellness = Array.isArray(appState.wellness) ? appState.wellness.filter(item => item.date !== date) : [];
       appState.wellness.push(entry);
+      appState.wellness.sort((a, b) => new Date(a.date) - new Date(b.date));
+      window.appState = appState;
       saveStateToLocal();
       renderWellnessSummary();
+      updateWellnessTrendChart();
+      if (wellnessDateInput) wellnessDateInput.value = date;
       closeModal('wellness-modal');
       showToast('Stato salute salvato', 'fa-brain');
     }
@@ -3033,26 +3067,144 @@
     let chartEx = null;
     let chartWeight = null;
     let chartNutr = null;
+    let chartWellness = null;
+
+    function getWellnessSeries(range = 'week', metric = 'sleep') {
+      const entries = [...(appState.wellness || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (!entries.length) {
+        return { labels: ['--'], values: [0] };
+      }
+
+      const today = new Date();
+      let labels = [];
+      let values = [];
+
+      if (range === 'day') {
+        const start = new Date(today);
+        start.setDate(today.getDate() - 6);
+        const rangeDates = [];
+        for (let i = 0; i <= 6; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i);
+          rangeDates.push(d.toISOString().split('T')[0]);
+        }
+        labels = rangeDates.map(date => new Date(date + 'T00:00:00').toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }));
+        values = rangeDates.map(date => {
+          const item = entries.find(e => e.date === date);
+          return item ? Number(item[metric] || 0) : 0;
+        });
+      } else if (range === 'week') {
+        const start = new Date(today);
+        start.setDate(today.getDate() - 27);
+        for (let i = 0; i < 8; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + (i * 4));
+          const iso = d.toISOString().split('T')[0];
+          labels.push(new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }));
+          const bucket = entries.filter(e => new Date(e.date) >= d && new Date(e.date) < new Date(d.getTime() + 4 * 86400000));
+          const avg = bucket.length ? bucket.reduce((sum, e) => sum + Number(e[metric] || 0), 0) / bucket.length : 0;
+          values.push(Number(avg.toFixed(1)));
+        }
+      } else if (range === 'month') {
+        const months = [];
+        const end = new Date(today);
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
+          months.push(d);
+        }
+        labels = months.map(d => d.toLocaleDateString('it-IT', { month: 'short' }));
+        values = months.map(d => {
+          const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
+          const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+          const batch = entries.filter(e => {
+            const dateObj = new Date(e.date + 'T00:00:00');
+            return dateObj >= mStart && dateObj < mEnd;
+          });
+          if (!batch.length) return 0;
+          return Number((batch.reduce((sum, e) => sum + Number(e[metric] || 0), 0) / batch.length).toFixed(1));
+        });
+      } else {
+        const years = [];
+        const end = new Date(today);
+        for (let i = 4; i >= 0; i--) {
+          const y = new Date(end.getFullYear() - i, 0, 1);
+          years.push(y);
+        }
+        labels = years.map(y => String(y.getFullYear()));
+        values = years.map(y => {
+          const batch = entries.filter(e => new Date(e.date + 'T00:00:00').getFullYear() === y.getFullYear());
+          if (!batch.length) return 0;
+          return Number((batch.reduce((sum, e) => sum + Number(e[metric] || 0), 0) / batch.length).toFixed(1));
+        });
+      }
+
+      return { labels, values };
+    }
+
+    function updateWellnessTrendChart() {
+      const metric = document.getElementById('wellness-metric-filter')?.value || 'sleep';
+      const range = document.getElementById('wellness-range-filter')?.value || 'week';
+      const ctx = document.getElementById('wellnessTrendChart')?.getContext('2d');
+      if (!ctx) return;
+
+      const { labels, values } = getWellnessSeries(range, metric);
+      const metricLabel = {
+        sleep: 'Sonno (h)',
+        stress: 'Stress (1-10)',
+        recovery: 'Recupero (1-10)',
+        mood: 'Umore (1-10)',
+        readiness: 'Readiness (1-10)'
+      }[metric] || 'Valore';
+
+      if (chartWellness) chartWellness.destroy();
+      chartWellness = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: metricLabel,
+            data: values,
+            borderColor: '#f472b6',
+            backgroundColor: 'rgba(244, 114, 182, 0.18)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { ticks: { color: '#64748b', font: { size: 10 } } }
+          }
+        }
+      });
+    }
 
     function updateAnalyticsCharts() {
       // 1. Populate Exercise Select
       const select = document.getElementById('chart-exercise-select');
       const uniqueEx = [...new Set(appState.workouts.map(w => w.name))];
-      select.innerHTML = '';
-      if (uniqueEx.length === 0) {
-        select.innerHTML = '<option>Nessun Esercizio</option>';
-      } else {
-        uniqueEx.forEach(exName => {
-          const opt = document.createElement('option');
-          opt.value = exName;
-          opt.textContent = exName;
-          select.appendChild(opt);
-        });
+      if (select) {
+        select.innerHTML = '';
+        if (uniqueEx.length === 0) {
+          select.innerHTML = '<option>Nessun Esercizio</option>';
+        } else {
+          uniqueEx.forEach(exName => {
+            const opt = document.createElement('option');
+            opt.value = exName;
+            opt.textContent = exName;
+            select.appendChild(opt);
+          });
+        }
       }
 
       updateExerciseChart();
       updateWeightChart();
       updateNutritionChart();
+      updateWellnessTrendChart();
     }
 
     function updateExerciseChart() {
