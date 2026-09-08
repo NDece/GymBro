@@ -484,10 +484,16 @@
           </h2>
           <p class="text-xs text-slate-400">Traccia esercizi, serie e sovraccarico</p>
         </div>
-        <button onclick="openModal('add-exercise-modal')" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-slate-950 font-bold text-xs flex items-center space-x-1.5 shadow-md glow-cyan transition">
-          <i class="fa-solid fa-plus text-sm"></i>
-          <span>Nuovo Esercizio</span>
-        </button>
+        <div class="flex space-x-2">
+          <button onclick="openModal('workout-plans-modal')" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold flex items-center space-x-1.5">
+            <i class="fa-solid fa-clipboard-list text-cyan-400"></i>
+            <span>Schede</span>
+          </button>
+          <button onclick="openModal('add-exercise-modal')" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-slate-950 font-bold text-xs flex items-center space-x-1.5 shadow-md glow-cyan transition">
+            <i class="fa-solid fa-plus text-sm"></i>
+            <span>Nuovo Esercizio</span>
+          </button>
+        </div>
       </div>
 
       <!-- Quick Date & Active Session Info -->
@@ -567,9 +573,7 @@
           </button>
         </div>
 
-        <!-- Macro Progress Bars -->
-        <div class="grid grid-cols-3 gap-3">
-          <!-- Protein -->
+        <div class="grid grid-cols-2 gap-3">
           <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
             <div class="flex justify-between text-[11px] font-semibold mb-1">
               <span class="text-rose-400">Proteine</span>
@@ -581,7 +585,6 @@
             <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-p">150</span>g</div>
           </div>
 
-          <!-- Carbs -->
           <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
             <div class="flex justify-between text-[11px] font-semibold mb-1">
               <span class="text-amber-400">Carbo</span>
@@ -593,7 +596,6 @@
             <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-c">250</span>g</div>
           </div>
 
-          <!-- Fats -->
           <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
             <div class="flex justify-between text-[11px] font-semibold mb-1">
               <span class="text-blue-400">Grassi</span>
@@ -603,6 +605,57 @@
               <div id="bar-f" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
             </div>
             <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-f">70</span>g</div>
+          </div>
+
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="flex justify-between text-[11px] font-semibold mb-1">
+              <span class="text-violet-400">Zuccheri</span>
+              <span class="text-slate-400"><span id="summary-sugars">0</span>g</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-sugars" class="h-full bg-violet-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-sugars">50</span>g</div>
+          </div>
+
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="flex justify-between text-[11px] font-semibold mb-1">
+              <span class="text-cyan-400">Calcio</span>
+              <span class="text-slate-400"><span id="summary-calcium">0</span>mg</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-calcium" class="h-full bg-cyan-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-calcium">1000</span>mg</div>
+          </div>
+
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="flex justify-between text-[11px] font-semibold mb-1">
+              <span class="text-emerald-400">Magnesio</span>
+              <span class="text-slate-400"><span id="summary-magnesium">0</span>mg</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-magnesium" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-magnesium">400</span>mg</div>
+          </div>
+
+          <div class="col-span-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="flex justify-between text-[11px] font-semibold mb-1">
+              <span class="text-amber-300">Fibre</span>
+              <span class="text-slate-400"><span id="summary-fiber">0</span>g</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-fiber" class="h-full bg-amber-300 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-[9px] text-slate-500 mt-1 text-right">Target: <span id="target-fiber">30</span>g</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-[1fr_110px] gap-3 items-center">
+          <div id="nutrition-week-summary" class="bg-slate-900/60 rounded-xl border border-slate-800 p-3 min-h-[96px]"></div>
+          <div class="flex items-center justify-center">
+            <div id="macro-donut" class="h-20 w-20 rounded-full border border-slate-700 shadow-inner" style="background: conic-gradient(#f43f5e 0% 33%, #fbbf24 33% 66%, #60a5fa 66% 100%);"></div>
           </div>
         </div>
       </div>
@@ -945,7 +998,11 @@
           </div>
         </div>
 
-        <!-- Initial Set Data -->
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Recupero (sec)</label>
+          <input type="number" id="ex-recovery" min="0" value="90" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
+        </div>
+
         <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
           <span class="text-xs font-bold text-slate-300 block">Prima Serie</span>
           <div class="grid grid-cols-2 gap-3">
@@ -964,6 +1021,59 @@
           Salva Esercizio
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: WORKOUT PLANS -->
+  <div id="workout-plans-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-lg space-y-4 shadow-2xl max-h-[88vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-clipboard-list text-cyan-400"></i>
+          <span>Schede Allenamento</span>
+        </h3>
+        <button onclick="closeModal('workout-plans-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="workout-plan-form" onsubmit="saveWorkoutPlan(event)" class="space-y-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Nome Scheda</label>
+          <input type="text" id="plan-name" required placeholder="Es. Push Day, Lower Body" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Giorno della settimana</label>
+          <select id="plan-day" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            <option value="Lunedì">Lunedì</option>
+            <option value="Martedì">Martedì</option>
+            <option value="Mercoledì">Mercoledì</option>
+            <option value="Giovedì">Giovedì</option>
+            <option value="Venerdì">Venerdì</option>
+            <option value="Sabato">Sabato</option>
+            <option value="Domenica">Domenica</option>
+          </select>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-300">Esercizi</span>
+            <button type="button" onclick="addPlanExerciseRow()" class="text-[11px] text-cyan-400 font-semibold">+ Aggiungi esercizio</button>
+          </div>
+          <div id="plan-exercises-container" class="space-y-2"></div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold text-sm shadow-lg">
+          Salva scheda
+        </button>
+      </form>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-[0.2rem]">Schede salvate</h4>
+          <button type="button" onclick="importWorkoutPlanFile()" class="text-[10px] text-emerald-400 underline">Importa</button>
+        </div>
+        <div id="workout-plans-list" class="space-y-2"></div>
+      </div>
     </div>
   </div>
 
@@ -1007,7 +1117,7 @@
 
         <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
           <span class="text-xs font-bold text-slate-300 block">Valori Nutrizionali per la dose</span>
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="text-[10px] text-rose-400 block mb-1">Proteine (g)</label>
               <input type="number" id="food-p" step="0.1" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
@@ -1019,6 +1129,22 @@
             <div>
               <label class="text-[10px] text-blue-400 block mb-1">Grassi (g)</label>
               <input type="number" id="food-f" step="0.1" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-violet-400 block mb-1">Zuccheri (g)</label>
+              <input type="number" id="food-sugars" step="0.1" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-cyan-400 block mb-1">Calcio (mg)</label>
+              <input type="number" id="food-calcium" step="1" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-emerald-400 block mb-1">Magnesio (mg)</label>
+              <input type="number" id="food-magnesium" step="1" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div class="col-span-2">
+              <label class="text-[10px] text-amber-300 block mb-1">Fibre (g)</label>
+              <input type="number" id="food-fiber" step="0.1" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
           </div>
         </div>
@@ -1177,7 +1303,7 @@
           <label class="text-xs text-slate-400 block mb-1">Target Calorie (kcal)</label>
           <input type="number" id="target-input-kcal" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
         </div>
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="text-[10px] text-rose-400 block mb-1">Proteine (g)</label>
             <input type="number" id="target-input-p" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
@@ -1189,6 +1315,22 @@
           <div>
             <label class="text-[10px] text-blue-400 block mb-1">Grassi (g)</label>
             <input type="number" id="target-input-f" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="text-[10px] text-violet-400 block mb-1">Zuccheri (g)</label>
+            <input type="number" id="target-input-sugars" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="text-[10px] text-cyan-400 block mb-1">Calcio (mg)</label>
+            <input type="number" id="target-input-calcium" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="text-[10px] text-emerald-400 block mb-1">Magnesio (mg)</label>
+            <input type="number" id="target-input-magnesium" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          </div>
+          <div class="col-span-2">
+            <label class="text-[10px] text-amber-300 block mb-1">Fibre (g)</label>
+            <input type="number" id="target-input-fiber" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
           </div>
         </div>
 
@@ -1265,6 +1407,19 @@
           <div>
             <label class="text-xs text-slate-400 block mb-1">Altezza (cm)</label>
             <input type="number" id="prof-input-height" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Sonno (h)</label>
+            <input type="number" id="prof-input-sleep" step="0.5" value="7" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Stile vita</label>
+            <select id="prof-input-lifestyle" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+              <option value="sedentario">Sedentario</option>
+              <option value="moderato">Moderato</option>
+              <option value="attivo">Attivo</option>
+              <option value="molto-attivo">Molto attivo</option>
+            </select>
           </div>
         </div>
 
@@ -1507,19 +1662,22 @@
   <script>
     // Global Application State Default Structure
     const DEFAULT_STATE = {
-      profile: { gender: 'male', age: 25, height: 175 },
-      targets: { calories: 2200, p: 150, c: 250, f: 70 },
-      workouts: [], // [{ id, date, name, category, rpe, sets: [{weight, reps}] }]
-      nutrition: [], // [{ id, date, meal, name, grams, p, c, f, kcal }]
+      profile: { gender: 'male', age: 25, height: 175, sleepHours: 7, lifestyle: 'moderato' },
+      targets: { calories: 2200, p: 150, c: 250, f: 70, sugars: 50, calcium: 1000, magnesium: 400, fiber: 30 },
+      workouts: [], // [{ id, date, name, category, rpe, recovery, sets: [{weight, reps}] }]
+      nutrition: [], // [{ id, date, meal, name, grams, p, c, f, sugars, calcium, magnesium, fiber, kcal }]
       water: {}, // { "YYYY-MM-DD": 1500 }
+      workoutPlans: [], // [{ id, name, dayOfWeek, exercises: [{name, category, rpe, weight, reps, recovery}] }]
+      workoutAssignments: {}, // { "YYYY-MM-DD": planId }
       presets: [
-        { name: "Petto di Pollo (Cotto)", p: 31, c: 0, f: 3.6 },
-        { name: "Riso Basmati (Crudo)", p: 7, c: 78, f: 0.9 },
-        { name: "Fiocchi d'Avena", p: 13, c: 68, f: 7 },
-        { name: "Uova Intere", p: 13, c: 1, f: 10 }
+        { name: "Petto di Pollo (Cotto)", p: 31, c: 0, f: 3.6, sugars: 0, calcium: 15, magnesium: 30, fiber: 0 },
+        { name: "Riso Basmati (Crudo)", p: 7, c: 78, f: 0.9, sugars: 0, calcium: 10, magnesium: 50, fiber: 1.6 },
+        { name: "Fiocchi d'Avena", p: 13, c: 68, f: 7, sugars: 0, calcium: 52, magnesium: 120, fiber: 8 },
+        { name: "Uova Intere", p: 13, c: 1, f: 10, sugars: 0, calcium: 56, magnesium: 12, fiber: 0 }
       ],
       bodyMetrics: [], // [{ id, date, weight, bf, chest, waist, hips, biceps }]
-      photos: [] // [{ id, date, base64 }]
+      photos: [], // [{ id, date, base64 }]
+      weeklyNutritionStatus: {}
     };
 
     let appState = JSON.parse(localStorage.getItem('gymbro_data')) || DEFAULT_STATE;
@@ -1572,6 +1730,11 @@
       document.getElementById('nutrition-date').value = todayStr;
       document.getElementById('body-date').value = todayStr;
 
+      const planContainer = document.getElementById('plan-exercises-container');
+      if (planContainer && planContainer.children.length === 0) {
+        addPlanExerciseRow();
+      }
+
       loadProfileUI();
       loadTargetsUI();
       renderAllViews();
@@ -1579,6 +1742,7 @@
 
     function renderAllViews() {
       renderWorkouts();
+      renderWorkoutPlans();
       renderNutrition();
       renderBodyMetrics();
       renderPhotos();
@@ -1661,12 +1825,14 @@
       const weight = parseFloat(document.getElementById('ex-weight').value) || 0;
       const reps = parseInt(document.getElementById('ex-reps').value) || 0;
 
+      const recovery = parseInt(document.getElementById('ex-recovery').value) || 90;
       const newEx = {
         id: 'ex_' + Date.now(),
         date: date,
         name: name,
         category: category,
         rpe: rpe,
+        recovery: recovery,
         sets: [{ weight, reps }]
       };
 
@@ -1713,15 +1879,228 @@
       showToast('Esercizio rimosso');
     }
 
+    function addPlanExerciseRow() {
+      const container = document.getElementById('plan-exercises-container');
+      if (!container) return;
+
+      const row = document.createElement('div');
+      row.className = 'plan-exercise-row grid grid-cols-2 gap-2 bg-slate-950/70 border border-slate-800 rounded-xl p-2';
+      row.innerHTML = `
+        <input type="text" placeholder="Nome esercizio" class="plan-ex-name w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
+        <select class="plan-ex-category w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white">
+          <option value="Petto">Petto</option>
+          <option value="Dorso">Dorso</option>
+          <option value="Gambe">Gambe</option>
+          <option value="Spalle">Spalle</option>
+          <option value="Braccia">Braccia</option>
+          <option value="Core">Core</option>
+          <option value="Cardio">Cardio</option>
+        </select>
+        <input type="number" min="1" max="10" value="8" placeholder="RPE" class="plan-ex-rpe w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
+        <input type="number" min="0" step="0.5" value="10" placeholder="Peso kg" class="plan-ex-weight w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
+        <input type="number" min="1" value="8" placeholder="Reps" class="plan-ex-reps w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white col-span-2" />
+        <input type="number" min="0" value="90" placeholder="Recupero sec" class="plan-ex-recovery w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white col-span-2" />
+      `;
+      container.appendChild(row);
+    }
+
+    function saveWorkoutPlan(e) {
+      e.preventDefault();
+      const name = document.getElementById('plan-name').value.trim();
+      const dayOfWeek = document.getElementById('plan-day').value;
+      const rows = document.querySelectorAll('#plan-exercises-container .plan-exercise-row');
+
+      const exercises = Array.from(rows).map(row => {
+        const nameValue = row.querySelector('.plan-ex-name').value.trim();
+        if (!nameValue) return null;
+        return {
+          id: 'plan_ex_' + Date.now() + Math.random().toString(16).slice(2),
+          name: nameValue,
+          category: row.querySelector('.plan-ex-category').value,
+          rpe: parseFloat(row.querySelector('.plan-ex-rpe').value) || 8,
+          weight: parseFloat(row.querySelector('.plan-ex-weight').value) || 0,
+          reps: parseInt(row.querySelector('.plan-ex-reps').value) || 0,
+          recovery: parseInt(row.querySelector('.plan-ex-recovery').value) || 90
+        };
+      }).filter(Boolean);
+
+      if (!name || exercises.length === 0) {
+        showToast('Inserisci un nome e almeno un esercizio', 'fa-circle-exclamation');
+        return;
+      }
+
+      appState.workoutPlans.push({
+        id: 'plan_' + Date.now(),
+        name,
+        dayOfWeek,
+        exercises
+      });
+
+      saveStateToLocal();
+      document.getElementById('workout-plan-form').reset();
+      document.getElementById('plan-exercises-container').innerHTML = '';
+      addPlanExerciseRow();
+      renderWorkoutPlans();
+      showToast('Scheda salvata!', 'fa-clipboard-list');
+    }
+
+    function activateWorkoutPlan(planId, dateOverride = null) {
+      const selectedDate = dateOverride || document.getElementById('workout-date').value;
+      if (!selectedDate) return;
+
+      appState.workoutAssignments = appState.workoutAssignments || {};
+      appState.workoutAssignments[selectedDate] = planId;
+      saveStateToLocal();
+      renderWorkouts();
+      renderWorkoutPlans();
+      const plan = appState.workoutPlans.find(item => item.id === planId);
+      showToast(plan ? `Scheda attiva: ${plan.name}` : 'Scheda attivata', 'fa-calendar-check');
+    }
+
+    function exportWorkoutPlan(planId) {
+      const plan = appState.workoutPlans.find(item => item.id === planId);
+      if (!plan) return;
+
+      const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${plan.name.toLowerCase().replace(/\s+/g, '_')}_schema.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Schema esportato', 'fa-file-export');
+    }
+
+    function deleteWorkoutPlan(planId) {
+      appState.workoutPlans = appState.workoutPlans.filter(item => item.id !== planId);
+      Object.keys(appState.workoutAssignments || {}).forEach(date => {
+        if (appState.workoutAssignments[date] === planId) delete appState.workoutAssignments[date];
+      });
+      saveStateToLocal();
+      renderWorkouts();
+      renderWorkoutPlans();
+      showToast('Scheda rimossa', 'fa-trash');
+    }
+
+    function importWorkoutPlanFile() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const imported = JSON.parse(reader.result);
+            if (!imported || !imported.name || !Array.isArray(imported.exercises)) {
+              throw new Error('Formato schema non valido');
+            }
+            appState.workoutPlans.push({
+              id: imported.id || 'plan_' + Date.now(),
+              name: imported.name,
+              dayOfWeek: imported.dayOfWeek || 'Lunedì',
+              exercises: imported.exercises
+            });
+            saveStateToLocal();
+            renderWorkoutPlans();
+            showToast('Scheda importata', 'fa-file-import');
+          } catch (err) {
+            console.error(err);
+            showToast('File schema non valido', 'fa-circle-exclamation');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    function renderWorkoutPlans() {
+      const list = document.getElementById('workout-plans-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (!appState.workoutPlans.length) {
+        list.innerHTML = '<div class="text-[11px] text-slate-400 italic">Nessuna scheda salvata.</div>';
+        return;
+      }
+
+      const selectedDate = document.getElementById('workout-date')?.value;
+      appState.workoutPlans.forEach(plan => {
+        const assignedDate = Object.entries(appState.workoutAssignments || {}).find(([_, id]) => id === plan.id)?.[0] || null;
+        const activeOnSelected = selectedDate && appState.workoutAssignments?.[selectedDate] === plan.id;
+
+        const item = document.createElement('div');
+        item.className = 'bg-slate-900/60 border border-slate-800 rounded-xl p-3';
+        item.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="font-bold text-white text-sm">${plan.name}</div>
+              <div class="text-[10px] text-slate-400">Giorno: ${plan.dayOfWeek} · ${plan.exercises.length} esercizi</div>
+              ${assignedDate ? `<div class="text-[10px] text-emerald-400 mt-1">Attiva il ${assignedDate}</div>` : ''}
+            </div>
+            <div class="flex flex-wrap gap-1 justify-end">
+              <button data-plan-id="${plan.id}" class="plan-activate-btn rounded-md bg-cyan-600 px-2 py-1 text-[10px] font-bold text-slate-950">${activeOnSelected ? 'Attiva' : 'Rendi attiva'}</button>
+              <button data-export-plan="${plan.id}" class="rounded-md bg-slate-700 px-2 py-1 text-[10px] font-bold text-slate-200">Esporta</button>
+              <button data-delete-plan="${plan.id}" class="rounded-md bg-rose-700 px-2 py-1 text-[10px] font-bold text-white">Elimina</button>
+            </div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+
+      list.querySelectorAll('[data-plan-id]').forEach(btn => {
+        btn.addEventListener('click', () => activateWorkoutPlan(btn.dataset.planId));
+      });
+      list.querySelectorAll('[data-export-plan]').forEach(btn => {
+        btn.addEventListener('click', () => exportWorkoutPlan(btn.dataset.exportPlan));
+      });
+      list.querySelectorAll('[data-delete-plan]').forEach(btn => {
+        btn.addEventListener('click', () => deleteWorkoutPlan(btn.dataset.deletePlan));
+      });
+    }
+
     function renderWorkouts() {
       const selectedDate = document.getElementById('workout-date').value;
       const container = document.getElementById('workout-list');
       container.innerHTML = '';
 
+      const assignedPlanId = appState.workoutAssignments?.[selectedDate];
+      if (assignedPlanId) {
+        const assignedPlan = appState.workoutPlans.find(plan => plan.id === assignedPlanId);
+        if (assignedPlan) {
+          const totalPlanVolume = assignedPlan.exercises.reduce((sum, ex) => sum + ((Number(ex.weight) || 0) * (Number(ex.reps) || 0)), 0);
+          const planCard = document.createElement('div');
+          planCard.className = 'bg-cyan-950/30 border border-cyan-500/30 rounded-2xl p-4 space-y-3 shadow-md';
+          planCard.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="text-[10px] uppercase tracking-[0.2rem] text-cyan-300">Scheda attiva</div>
+                <div class="text-lg font-bold text-white">${assignedPlan.name}</div>
+              </div>
+              <span class="rounded-full bg-emerald-500/15 border border-emerald-400/40 px-2 py-1 text-[10px] font-bold text-emerald-300">${assignedPlan.dayOfWeek}</span>
+            </div>
+            <div class="text-[11px] text-slate-300">Volume previsto: <span class="text-cyan-400 font-bold">${totalPlanVolume} kg</span></div>
+            <div class="space-y-2">
+              ${assignedPlan.exercises.map(ex => `
+                <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-2">
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm font-bold text-white">${ex.name}</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-400 font-semibold border border-cyan-800/50">${ex.category}</span>
+                  </div>
+                  <div class="text-[11px] text-slate-400 mt-1">RPE ${ex.rpe} · ${ex.weight} kg · ${ex.reps} reps · Recupero ${ex.recovery}s</div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          container.appendChild(planCard);
+        }
+      }
+
       const dayWorkouts = appState.workouts.filter(w => w.date === selectedDate);
       let dayVolume = 0;
 
-      if (dayWorkouts.length === 0) {
+      if (dayWorkouts.length === 0 && !assignedPlanId) {
         container.innerHTML = `
           <div class="text-center py-10 bg-darkcard/50 rounded-2xl border border-dashed border-slate-800">
             <i class="fa-solid fa-dumbbell text-3xl text-slate-600 mb-2"></i>
@@ -1740,7 +2119,6 @@
         });
         dayVolume += exVolume;
 
-        // Estimated 1RM using Epley Formula: 1RM = weight * (1 + reps/30)
         const topSet = ex.sets[0] || { weight: 0, reps: 0 };
         const est1RM = Math.round(topSet.weight * (1 + topSet.reps / 30));
 
@@ -1762,7 +2140,6 @@
             </button>
           </div>
 
-          <!-- Sets List -->
           <div class="space-y-2 pt-1">
             ${ex.sets.map((s, idx) => `
               <div class="flex items-center justify-between bg-slate-900/60 p-2 rounded-xl border border-slate-800/80 text-xs">
@@ -1935,13 +2312,16 @@
       const p = parseFloat(document.getElementById('food-p').value) || 0;
       const c = parseFloat(document.getElementById('food-c').value) || 0;
       const f = parseFloat(document.getElementById('food-f').value) || 0;
+      const sugars = parseFloat(document.getElementById('food-sugars').value) || 0;
+      const calcium = parseFloat(document.getElementById('food-calcium').value) || 0;
+      const magnesium = parseFloat(document.getElementById('food-magnesium').value) || 0;
+      const fiber = parseFloat(document.getElementById('food-fiber').value) || 0;
 
-      // 4 kcal per Prot & Carbs, 9 kcal per Fat
       const kcal = Math.round((p * 4) + (c * 4) + (f * 9));
 
       const newLog = {
         id: 'food_' + Date.now(),
-        date, name, meal, grams, p, c, f, kcal
+        date, name, meal, grams, p, c, f, sugars, calcium, magnesium, fiber, kcal
       };
 
       appState.nutrition.push(newLog);
@@ -1968,37 +2348,155 @@
       renderNutrition();
     }
 
+    function computeWeeklyNutritionSummary() {
+      const target = appState.targets || {};
+      const today = new Date();
+      const dates = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+      }
+
+      const daySummaries = dates.map(date => {
+        const items = (appState.nutrition || []).filter(item => item.date === date);
+        return {
+          date,
+          kcal: items.reduce((sum, item) => sum + (Number(item.kcal) || 0), 0),
+          p: items.reduce((sum, item) => sum + (Number(item.p) || 0), 0),
+          c: items.reduce((sum, item) => sum + (Number(item.c) || 0), 0),
+          f: items.reduce((sum, item) => sum + (Number(item.f) || 0), 0),
+          sugars: items.reduce((sum, item) => sum + (Number(item.sugars) || 0), 0),
+          calcium: items.reduce((sum, item) => sum + (Number(item.calcium) || 0), 0),
+          magnesium: items.reduce((sum, item) => sum + (Number(item.magnesium) || 0), 0),
+          fiber: items.reduce((sum, item) => sum + (Number(item.fiber) || 0), 0)
+        };
+      });
+
+      const checks = [];
+      const missing = [];
+      daySummaries.forEach(day => {
+        if (day.kcal < (target.calories || 2200) * 0.8) missing.push('calorie');
+        checks.push(day.kcal >= (target.calories || 2200) * 0.8 ? 1 : 0);
+
+        if (day.p < (target.p || 150) * 0.8) missing.push('proteine');
+        checks.push(day.p >= (target.p || 150) * 0.8 ? 1 : 0);
+
+        if (day.c < (target.c || 250) * 0.8) missing.push('carbo');
+        checks.push(day.c >= (target.c || 250) * 0.8 ? 1 : 0);
+
+        if (day.f < (target.f || 70) * 0.8) missing.push('grassi');
+        checks.push(day.f >= (target.f || 70) * 0.8 ? 1 : 0);
+
+        if (day.sugars > (target.sugars || 50)) missing.push('zuccheri');
+        checks.push(day.sugars <= (target.sugars || 50) ? 1 : 0);
+
+        if (day.calcium < (target.calcium || 1000) * 0.8) missing.push('calcio');
+        checks.push(day.calcium >= (target.calcium || 1000) * 0.8 ? 1 : 0);
+
+        if (day.magnesium < (target.magnesium || 400) * 0.8) missing.push('magnesio');
+        checks.push(day.magnesium >= (target.magnesium || 400) * 0.8 ? 1 : 0);
+
+        if (day.fiber < (target.fiber || 30) * 0.8) missing.push('fibre');
+        checks.push(day.fiber >= (target.fiber || 30) * 0.8 ? 1 : 0);
+      });
+
+      const compliance = Math.min(100, Math.round((checks.reduce((sum, item) => sum + item, 0) / checks.length) * 100)) || 0;
+      const summary = {
+        compliance,
+        isComplete: compliance >= 70,
+        missing: [...new Set(missing)].slice(0, 4).map(label => ({
+          calorie: 'calorie',
+          proteine: 'proteine',
+          carbo: 'carbo',
+          grassi: 'grassi',
+          zuccheri: 'zuccheri',
+          calcio: 'calcio',
+          magnesio: 'magnesio',
+          fibre: 'fibre'
+        }[label] || label))
+      };
+      appState.weeklyNutritionStatus = summary;
+      return summary;
+    }
+
     function renderNutrition() {
       const selectedDate = document.getElementById('nutrition-date').value;
       const container = document.getElementById('meals-container');
       container.innerHTML = '';
 
       const dayLogs = appState.nutrition.filter(n => n.date === selectedDate);
-
-      // Water UI
       const waterVal = appState.water[selectedDate] || 0;
       document.getElementById('water-amount').textContent = waterVal;
 
-      // Calculate Day Totals
-      let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0;
+      let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0, totalSugars = 0, totalCalcium = 0, totalMagnesium = 0, totalFiber = 0;
       dayLogs.forEach(l => {
         totalKcal += l.kcal;
         totalP += l.p;
         totalC += l.c;
         totalF += l.f;
+        totalSugars += Number(l.sugars || 0);
+        totalCalcium += Number(l.calcium || 0);
+        totalMagnesium += Number(l.magnesium || 0);
+        totalFiber += Number(l.fiber || 0);
       });
 
-      // Update Summary Cards
       document.getElementById('summary-calories').textContent = totalKcal;
       document.getElementById('summary-p').textContent = Math.round(totalP);
       document.getElementById('summary-c').textContent = Math.round(totalC);
       document.getElementById('summary-f').textContent = Math.round(totalF);
+      document.getElementById('summary-sugars').textContent = Math.round(totalSugars);
+      document.getElementById('summary-calcium').textContent = Math.round(totalCalcium);
+      document.getElementById('summary-magnesium').textContent = Math.round(totalMagnesium);
+      document.getElementById('summary-fiber').textContent = Math.round(totalFiber);
 
-      // Progress bars percentage
       const target = appState.targets;
-      document.getElementById('bar-p').style.width = `${Math.min(100, (totalP / target.p) * 100)}%`;
-      document.getElementById('bar-c').style.width = `${Math.min(100, (totalC / target.c) * 100)}%`;
-      document.getElementById('bar-f').style.width = `${Math.min(100, (totalF / target.f) * 100)}%`;
+      const macroItems = [
+        { key: 'bar-p', value: totalP, target: target.p, label: 'Proteine' },
+        { key: 'bar-c', value: totalC, target: target.c, label: 'Carbo' },
+        { key: 'bar-f', value: totalF, target: target.f, label: 'Grassi' },
+        { key: 'bar-sugars', value: totalSugars, target: target.sugars || 50, label: 'Zuccheri' },
+        { key: 'bar-calcium', value: totalCalcium, target: target.calcium || 1000, label: 'Calcio' },
+        { key: 'bar-magnesium', value: totalMagnesium, target: target.magnesium || 400, label: 'Magnesio' },
+        { key: 'bar-fiber', value: totalFiber, target: target.fiber || 30, label: 'Fibre' }
+      ];
+      macroItems.forEach(item => {
+        const el = document.getElementById(item.key);
+        if (el) el.style.width = `${Math.min(100, (item.value / item.target) * 100)}%`;
+      });
+
+      const weeklySummary = computeWeeklyNutritionSummary();
+      const summaryCard = document.getElementById('nutrition-week-summary');
+      if (summaryCard) {
+        summaryCard.innerHTML = `
+          <div class="text-[11px] text-slate-300">
+            <div class="font-bold text-white mb-2">Riepilogo settimanale</div>
+            <div class="space-y-2">
+              <div class="flex justify-between"><span>Completamento</span><span class="font-semibold ${weeklySummary.compliance >= 70 ? 'text-emerald-400' : 'text-amber-400'}">${weeklySummary.compliance}%</span></div>
+              <div class="flex justify-between"><span>Status</span><span class="font-semibold ${weeklySummary.isComplete ? 'text-emerald-400' : 'text-rose-400'}">${weeklySummary.isComplete ? 'Buono' : 'Da migliorare'}</span></div>
+              <div class="text-[10px] text-slate-400">${weeklySummary.missing.join(', ') || 'Nessun deficit rilevato'}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      const donut = document.getElementById('macro-donut');
+      if (donut) {
+        const segments = [
+          { value: Math.max(0, totalP), color: '#f43f5e' },
+          { value: Math.max(0, totalC), color: '#fbbf24' },
+          { value: Math.max(0, totalF), color: '#60a5fa' }
+        ];
+        const totalMacro = segments.reduce((sum, item) => sum + item.value, 0) || 1;
+        let current = 0;
+        const gradient = segments.map(item => {
+          const start = (current / totalMacro) * 100;
+          current += item.value;
+          const end = (current / totalMacro) * 100;
+          return `${item.color} ${start}% ${end}%`;
+        }).join(', ');
+        donut.style.background = `conic-gradient(${gradient})`;
+      }
 
       // Meal Groupings
       const meals = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
@@ -2127,7 +2625,11 @@
         calories: parseInt(document.getElementById('target-input-kcal').value) || 2000,
         p: parseInt(document.getElementById('target-input-p').value) || 150,
         c: parseInt(document.getElementById('target-input-c').value) || 200,
-        f: parseInt(document.getElementById('target-input-f').value) || 60
+        f: parseInt(document.getElementById('target-input-f').value) || 60,
+        sugars: parseInt(document.getElementById('target-input-sugars').value) || 50,
+        calcium: parseInt(document.getElementById('target-input-calcium').value) || 1000,
+        magnesium: parseInt(document.getElementById('target-input-magnesium').value) || 400,
+        fiber: parseInt(document.getElementById('target-input-fiber').value) || 30
       };
       saveStateToLocal();
       loadTargetsUI();
@@ -2142,11 +2644,19 @@
       document.getElementById('target-p').textContent = t.p;
       document.getElementById('target-c').textContent = t.c;
       document.getElementById('target-f').textContent = t.f;
+      document.getElementById('target-sugars').textContent = t.sugars || 50;
+      document.getElementById('target-calcium').textContent = t.calcium || 1000;
+      document.getElementById('target-magnesium').textContent = t.magnesium || 400;
+      document.getElementById('target-fiber').textContent = t.fiber || 30;
 
       document.getElementById('target-input-kcal').value = t.calories;
       document.getElementById('target-input-p').value = t.p;
       document.getElementById('target-input-c').value = t.c;
       document.getElementById('target-input-f').value = t.f;
+      document.getElementById('target-input-sugars').value = t.sugars || 50;
+      document.getElementById('target-input-calcium').value = t.calcium || 1000;
+      document.getElementById('target-input-magnesium').value = t.magnesium || 400;
+      document.getElementById('target-input-fiber').value = t.fiber || 30;
     }
 
     // ----------------------------------------------------
@@ -2157,11 +2667,14 @@
       appState.profile = {
         gender: document.getElementById('prof-input-gender').value,
         age: parseInt(document.getElementById('prof-input-age').value) || 25,
-        height: parseInt(document.getElementById('prof-input-height').value) || 175
+        height: parseInt(document.getElementById('prof-input-height').value) || 175,
+        sleepHours: parseFloat(document.getElementById('prof-input-sleep').value) || 7,
+        lifestyle: document.getElementById('prof-input-lifestyle').value || 'moderato'
       };
       saveStateToLocal();
       loadProfileUI();
       renderBodyMetrics();
+      renderNutrition();
       closeModal('profile-modal');
       showToast('Profilo salvato!');
     }
@@ -2171,10 +2684,14 @@
       document.getElementById('prof-gender').textContent = p.gender === 'male' ? 'Uomo' : 'Donna';
       document.getElementById('prof-age').textContent = `${p.age} anni`;
       document.getElementById('prof-height').textContent = `${p.height} cm`;
+      document.getElementById('prof-sleep').textContent = `${p.sleepHours || 7} h`;
+      document.getElementById('prof-lifestyle').textContent = p.lifestyle || 'moderato';
 
       document.getElementById('prof-input-gender').value = p.gender;
       document.getElementById('prof-input-age').value = p.age;
       document.getElementById('prof-input-height').value = p.height;
+      document.getElementById('prof-input-sleep').value = p.sleepHours || 7;
+      document.getElementById('prof-input-lifestyle').value = p.lifestyle || 'moderato';
     }
 
     function saveBodyLog(e) {
