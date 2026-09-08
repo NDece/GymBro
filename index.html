@@ -774,12 +774,44 @@
     <!-- TAB 4: ANALYTICS & CHARTS                  -->
     <!-- ========================================== -->
     <section id="tab-analytics" class="space-y-5 hidden transition-all duration-300">
-      <div>
-        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
-          <i class="fa-solid fa-chart-line text-cyan-400"></i>
-          <span>Andamento & Analytics</span>
-        </h2>
-        <p class="text-xs text-slate-400">Visualizza i tuoi progressi nel tempo</p>
+      <div class="flex justify-between items-center gap-3">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-chart-line text-cyan-400"></i>
+            <span>Andamento & Analytics</span>
+          </h2>
+          <p class="text-xs text-slate-400">Visualizza i tuoi progressi nel tempo</p>
+        </div>
+        <button onclick="openModal('wellness-modal')" class="px-3 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 text-slate-950 font-bold text-[11px] shadow-md">
+          <i class="fa-solid fa-brain mr-1"></i> Stato salute
+        </button>
+      </div>
+
+      <div id="health-overview-card" class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-4 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+            <i class="fa-solid fa-clipboard-check text-emerald-400"></i>
+            <span>Panoramica OMS / Best practice</span>
+          </h3>
+          <span id="health-score-pill" class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">In attesa</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-[10px] text-slate-300">
+          <div class="bg-slate-900/60 rounded-xl p-2 border border-slate-800">
+            <div class="text-slate-400">Giornaliero</div>
+            <div id="health-daily-status" class="mt-1 text-sm font-bold text-emerald-400">--</div>
+          </div>
+          <div class="bg-slate-900/60 rounded-xl p-2 border border-slate-800">
+            <div class="text-slate-400">Settimanale</div>
+            <div id="health-weekly-status" class="mt-1 text-sm font-bold text-cyan-400">--</div>
+          </div>
+          <div class="bg-slate-900/60 rounded-xl p-2 border border-slate-800">
+            <div class="text-slate-400">Mensile</div>
+            <div id="health-monthly-status" class="mt-1 text-sm font-bold text-violet-400">--</div>
+          </div>
+        </div>
+        <div id="health-insights" class="text-[11px] text-slate-300 bg-slate-900/40 rounded-xl border border-slate-800 p-3 leading-relaxed">
+          Inserisci il tuo stato di sonno, stress e recupero per avere un quadro realistico della tua salute.
+        </div>
       </div>
 
       <!-- Chart 1: Strength Progress / Overload -->
@@ -1341,6 +1373,54 @@
     </div>
   </div>
 
+  <!-- MODAL: WELLNESS REPORT -->
+  <div id="wellness-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-darkcard border border-darkborder rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white">Stato salute & recupero</h3>
+        <button onclick="closeModal('wellness-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form onsubmit="saveWellnessEntry(event)" class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Data</label>
+          <input type="date" id="wellness-date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Sonno (ore)</label>
+            <input type="number" id="wellness-sleep" step="0.5" min="0" max="12" value="7" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Stress (1-10)</label>
+            <input type="number" id="wellness-stress" min="1" max="10" value="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Recupero (1-10)</label>
+            <input type="number" id="wellness-recovery" min="1" max="10" value="7" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Umore (1-10)</label>
+            <input type="number" id="wellness-mood" min="1" max="10" value="7" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-slate-400 block mb-1">Prontezza / readiness (1-10)</label>
+            <input type="number" id="wellness-readiness" min="1" max="10" value="7" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-slate-400 block mb-1">Note / osservazioni</label>
+            <textarea id="wellness-notes" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" placeholder="Es. riposo buono, allenamento intenso, molto stress..."></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 text-slate-950 font-bold text-sm shadow-lg">
+          Salva stato salute
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: ADD BODY LOG -->
   <div id="add-body-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
     <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl">
@@ -1669,6 +1749,7 @@
       water: {}, // { "YYYY-MM-DD": 1500 }
       workoutPlans: [], // [{ id, name, dayOfWeek, exercises: [{name, category, rpe, weight, reps, recovery}] }]
       workoutAssignments: {}, // { "YYYY-MM-DD": planId }
+      wellness: [], // [{ id, date, sleepHours, stress, recovery, mood, readiness, notes }]
       presets: [
         { name: "Petto di Pollo (Cotto)", p: 31, c: 0, f: 3.6, sugars: 0, calcium: 15, magnesium: 30, fiber: 0 },
         { name: "Riso Basmati (Crudo)", p: 7, c: 78, f: 0.9, sugars: 0, calcium: 10, magnesium: 50, fiber: 1.6 },
@@ -1747,6 +1828,7 @@
       renderBodyMetrics();
       renderPhotos();
       renderPresets();
+      renderWellnessSummary();
       updateAnalyticsCharts();
     }
 
@@ -1886,20 +1968,38 @@
       const row = document.createElement('div');
       row.className = 'plan-exercise-row grid grid-cols-2 gap-2 bg-slate-950/70 border border-slate-800 rounded-xl p-2';
       row.innerHTML = `
-        <input type="text" placeholder="Nome esercizio" class="plan-ex-name w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
-        <select class="plan-ex-category w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white">
-          <option value="Petto">Petto</option>
-          <option value="Dorso">Dorso</option>
-          <option value="Gambe">Gambe</option>
-          <option value="Spalle">Spalle</option>
-          <option value="Braccia">Braccia</option>
-          <option value="Core">Core</option>
-          <option value="Cardio">Cardio</option>
-        </select>
-        <input type="number" min="1" max="10" value="8" placeholder="RPE" class="plan-ex-rpe w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
-        <input type="number" min="0" step="0.5" value="10" placeholder="Peso kg" class="plan-ex-weight w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
-        <input type="number" min="1" value="8" placeholder="Reps" class="plan-ex-reps w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white col-span-2" />
-        <input type="number" min="0" value="90" placeholder="Recupero sec" class="plan-ex-recovery w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white col-span-2" />
+        <div class="col-span-2">
+          <label class="text-[10px] uppercase tracking-[0.15rem] text-slate-400 block mb-1">Nome esercizio</label>
+          <input type="text" placeholder="Es. Panca piana" class="plan-ex-name w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-[0.15rem] text-slate-400 block mb-1">Categoria</label>
+          <select class="plan-ex-category w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white">
+            <option value="Petto">Petto</option>
+            <option value="Dorso">Dorso</option>
+            <option value="Gambe">Gambe</option>
+            <option value="Spalle">Spalle</option>
+            <option value="Braccia">Braccia</option>
+            <option value="Core">Core</option>
+            <option value="Cardio">Cardio</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-[0.15rem] text-slate-400 block mb-1">RPE</label>
+          <input type="number" min="1" max="10" value="8" class="plan-ex-rpe w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-[0.15rem] text-slate-400 block mb-1">Peso in kg</label>
+          <input type="number" min="0" step="0.5" value="10" class="plan-ex-weight w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-[0.15rem] text-slate-400 block mb-1">Ripetizioni</label>
+          <input type="number" min="1" value="8" class="plan-ex-reps w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
+        </div>
+        <div class="col-span-2">
+          <label class="text-[10px] uppercase tracking-[0.15rem] text-slate-400 block mb-1">Recupero in sec</label>
+          <input type="number" min="0" value="90" class="plan-ex-recovery w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white" />
+        </div>
       `;
       container.appendChild(row);
     }
@@ -2418,6 +2518,108 @@
       };
       appState.weeklyNutritionStatus = summary;
       return summary;
+    }
+
+    function saveWellnessEntry(e) {
+      e.preventDefault();
+      const date = document.getElementById('wellness-date').value;
+      const entry = {
+        id: 'wellness_' + Date.now(),
+        date,
+        sleepHours: parseFloat(document.getElementById('wellness-sleep').value) || 7,
+        stress: parseInt(document.getElementById('wellness-stress').value) || 4,
+        recovery: parseInt(document.getElementById('wellness-recovery').value) || 7,
+        mood: parseInt(document.getElementById('wellness-mood').value) || 7,
+        readiness: parseInt(document.getElementById('wellness-readiness').value) || 7,
+        notes: document.getElementById('wellness-notes').value.trim()
+      };
+
+      appState.wellness = appState.wellness.filter(item => item.date !== date);
+      appState.wellness.push(entry);
+      saveStateToLocal();
+      renderWellnessSummary();
+      closeModal('wellness-modal');
+      showToast('Stato salute salvato', 'fa-brain');
+    }
+
+    function computeHealthOverviewSummary() {
+      const today = new Date().toISOString().split('T')[0];
+      const todayEntry = (appState.wellness || []).find(item => item.date === today) || null;
+      const last7 = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        last7.push(d.toISOString().split('T')[0]);
+      }
+      const weeklyEntries = (appState.wellness || []).filter(item => last7.includes(item.date));
+      const weeklySleep = weeklyEntries.length ? weeklyEntries.reduce((sum, item) => sum + (Number(item.sleepHours) || 0), 0) / weeklyEntries.length : 0;
+      const weeklyStress = weeklyEntries.length ? weeklyEntries.reduce((sum, item) => sum + (Number(item.stress) || 0), 0) / weeklyEntries.length : 0;
+      const dietScore = (() => {
+        const target = appState.targets || {};
+        const currentDate = document.getElementById('nutrition-date')?.value || today;
+        const todayLogs = (appState.nutrition || []).filter(item => item.date === currentDate);
+        const totalKcal = todayLogs.reduce((sum, item) => sum + (Number(item.kcal) || 0), 0);
+        const totalP = todayLogs.reduce((sum, item) => sum + (Number(item.p) || 0), 0);
+        const proteinRatio = target.p ? (totalP / target.p) : 0;
+        const calorieRatio = target.calories ? (totalKcal / target.calories) : 0;
+        return Math.min(100, Math.round((Math.min(1, proteinRatio) * 50) + (Math.min(1, calorieRatio) * 50)));
+      })();
+
+      const currentVolume = (() => {
+        const selDate = document.getElementById('workout-date')?.value || today;
+        return (appState.workouts || []).filter(item => item.date === selDate).reduce((sum, ex) => sum + ex.sets.reduce((inner, set) => inner + ((set.weight || 0) * (set.reps || 0)), 0), 0);
+      })();
+
+      const dailyStatus = todayEntry
+        ? (todayEntry.sleepHours >= 7 && todayEntry.stress <= 6 && todayEntry.recovery >= 6 ? 'Buono' : 'Da migliorare')
+        : 'In attesa';
+      const weeklyStatus = weeklySleep >= 7 && weeklyStress <= 6 ? 'Buono' : 'Da migliorare';
+
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      const monthEntries = (appState.wellness || []).filter(item => new Date(item.date) >= monthStart);
+      const monthlyAvgSleep = monthEntries.length ? monthEntries.reduce((sum, item) => sum + (Number(item.sleepHours) || 0), 0) / monthEntries.length : 0;
+      const monthlyAvgStress = monthEntries.length ? monthEntries.reduce((sum, item) => sum + (Number(item.stress) || 0), 0) / monthEntries.length : 0;
+      const monthlyStatus = monthlyAvgSleep >= 7 && monthlyAvgStress <= 6 ? 'Buono' : 'Da migliorare';
+
+      const insights = [
+        `Riposo medio settimanale: ${weeklySleep ? weeklySleep.toFixed(1) : '--'} h`,
+        `Stress medio: ${weeklyStress ? weeklyStress.toFixed(1) : '--'} / 10`,
+        `Dieta odierna: ${dietScore}% rispetto al target`,
+        `Volume odierno: ${currentVolume} kg`,
+        `Recupero mese: ${monthlyAvgSleep ? monthlyAvgSleep.toFixed(1) : '--'} h media` 
+      ];
+
+      return {
+        dailyStatus,
+        weeklyStatus,
+        monthlyStatus,
+        dailyScore: dailyStatus === 'Buono' ? 80 : 45,
+        weeklyScore: weeklySleep >= 7 && weeklyStress <= 6 ? 83 : 52,
+        monthlyScore: monthlyAvgSleep >= 7 && monthlyAvgStress <= 6 ? 81 : 52,
+        insights
+      };
+    }
+
+    function renderWellnessSummary() {
+      const summary = computeHealthOverviewSummary();
+      const dailyEl = document.getElementById('health-daily-status');
+      const weeklyEl = document.getElementById('health-weekly-status');
+      const monthlyEl = document.getElementById('health-monthly-status');
+      const scoreEl = document.getElementById('health-score-pill');
+      const insightsEl = document.getElementById('health-insights');
+
+      if (dailyEl) dailyEl.textContent = summary.dailyStatus;
+      if (weeklyEl) weeklyEl.textContent = summary.weeklyStatus;
+      if (monthlyEl) monthlyEl.textContent = summary.monthlyStatus;
+      if (scoreEl) {
+        const avg = Math.round((summary.dailyScore + summary.weeklyScore + summary.monthlyScore) / 3);
+        scoreEl.textContent = `${avg}%`;
+        scoreEl.className = `text-[10px] px-2 py-1 rounded-full ${avg >= 70 ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'}`;
+      }
+      if (insightsEl) {
+        insightsEl.innerHTML = summary.insights.map(item => `<div class="mb-1">• ${item}</div>`).join('');
+      }
     }
 
     function renderNutrition() {
