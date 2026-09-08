@@ -1340,9 +1340,27 @@
             </div>
           </div>
 
-          <div>
-            <label class="text-[10px] text-blue-400 block mb-1">Grassi</label>
-            <input id="prop-f" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] text-blue-400 block mb-1">Grassi</label>
+              <input id="prop-f" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-violet-400 block mb-1">Zuccheri</label>
+              <input id="prop-sugars" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-cyan-400 block mb-1">Calcio</label>
+              <input id="prop-calcium" type="number" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-emerald-400 block mb-1">Magnesio</label>
+              <input id="prop-magnesium" type="number" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
+            <div class="col-span-2">
+              <label class="text-[10px] text-amber-300 block mb-1">Fibre</label>
+              <input id="prop-fiber" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+            </div>
           </div>
 
           <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 font-bold text-sm shadow-lg">
@@ -4249,8 +4267,12 @@ function openNutritionProposalModal(data, dataUrl) {
   const pInput = document.getElementById('prop-p');
   const cInput = document.getElementById('prop-c');
   const fInput = document.getElementById('prop-f');
+  const sugarsInput = document.getElementById('prop-sugars');
+  const calciumInput = document.getElementById('prop-calcium');
+  const magnesiumInput = document.getElementById('prop-magnesium');
+  const fiberInput = document.getElementById('prop-fiber');
 
-  if (!sourceEl || !modal || !nameInput || !kcalInput || !pInput || !cInput || !fInput) {
+  if (!sourceEl || !modal || !nameInput || !kcalInput || !pInput || !cInput || !fInput || !sugarsInput || !calciumInput || !magnesiumInput || !fiberInput) {
     showToast('Modulo proposta nutrizione non disponibile');
     return;
   }
@@ -4279,12 +4301,20 @@ function openNutritionProposalModal(data, dataUrl) {
   const pValue = Number(nutriments['proteins_100g'] ?? nutriments['proteins'] ?? 0);
   const cValue = Number(nutriments['carbohydrates_100g'] ?? nutriments['carbohydrates'] ?? 0);
   const fValue = Number(nutriments['fat_100g'] ?? nutriments['fat'] ?? 0);
+  const sugarsValue = Number(nutriments['sugars_100g'] ?? nutriments['sugars'] ?? nutriments['added-sugars_100g'] ?? 0);
+  const calciumValue = Number(nutriments['calcium_100g'] ?? nutriments['calcium'] ?? 0);
+  const magnesiumValue = Number(nutriments['magnesium_100g'] ?? nutriments['magnesium'] ?? 0);
+  const fiberValue = Number(nutriments['fiber_100g'] ?? nutriments['fibre_100g'] ?? nutriments['fiber'] ?? nutriments['fibre'] ?? 0);
 
   nameInput.value = productName || '';
   kcalInput.value = kcalValue ? Math.round(kcalValue) : '';
   pInput.value = pValue ? Math.round(pValue) : '';
   cInput.value = cValue ? Math.round(cValue) : '';
   fInput.value = fValue ? Math.round(fValue) : '';
+  sugarsInput.value = sugarsValue ? Number(sugarsValue.toFixed(1)) : '';
+  calciumInput.value = calciumValue ? Math.round(calciumValue) : '';
+  magnesiumInput.value = magnesiumValue ? Math.round(magnesiumValue) : '';
+  fiberInput.value = fiberValue ? Number(fiberValue.toFixed(1)) : '';
 
   openModal('nutrition-proposal-modal');
 }
@@ -4296,6 +4326,10 @@ function saveRecognizedNutrition(e) {
   const p = parseInt(document.getElementById('prop-p').value) || 0;
   const c = parseInt(document.getElementById('prop-c').value) || 0;
   const f = parseInt(document.getElementById('prop-f').value) || 0;
+  const sugars = parseFloat(document.getElementById('prop-sugars').value) || 0;
+  const calcium = parseFloat(document.getElementById('prop-calcium').value) || 0;
+  const magnesium = parseFloat(document.getElementById('prop-magnesium').value) || 0;
+  const fiber = parseFloat(document.getElementById('prop-fiber').value) || 0;
 
   if (!name) {
     showToast('Inserisci un nome prodotto valido');
@@ -4308,8 +4342,12 @@ function saveRecognizedNutrition(e) {
     existing.c = c;
     existing.f = f;
     existing.kcal = kcal;
+    existing.sugars = sugars;
+    existing.calcium = calcium;
+    existing.magnesium = magnesium;
+    existing.fiber = fiber;
   } else {
-    appState.presets.push({ name, p, c, f, kcal, ts: new Date().toISOString() });
+    appState.presets.push({ name, p, c, f, sugars, calcium, magnesium, fiber, kcal, ts: new Date().toISOString() });
   }
 
   persistFoodDatabase();
