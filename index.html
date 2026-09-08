@@ -787,86 +787,90 @@
         </button>
       </div>
 
-      <div id="health-overview-card" class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-4 shadow-lg">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-          <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
-            <i class="fa-solid fa-clipboard-check text-emerald-400"></i>
-            <span>Panoramica OMS / Best practice</span>
-          </h3>
-          <span id="health-score-pill" class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">In attesa</span>
+      <div id="health-overview-card" class="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-violet-950/40 border border-violet-500/20 rounded-3xl p-4 space-y-4 shadow-[0_0_0_1px_rgba(168,85,247,0.08),0_20px_35px_rgba(15,23,42,0.5)] backdrop-blur-sm">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(168,85,247,0.18),_transparent_35%),radial-gradient(circle_at_bottom_left,_rgba(34,211,238,0.12),_transparent_30%)]"></div>
+        <div class="relative flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <div class="flex items-center gap-2">
+            <h3 class="text-xs font-bold text-slate-100 flex items-center space-x-1.5">
+              <i class="fa-solid fa-clipboard-check text-emerald-400"></i>
+              <span>Panoramica OMS / Best practice</span>
+            </h3>
+            <button onclick="openModal('health-guide-modal')" class="w-5 h-5 rounded-full border border-violet-400/60 bg-violet-500/10 text-violet-200 text-[10px] font-bold flex items-center justify-center hover:bg-violet-500/20 transition" title="Informazioni target e best practice">i</button>
+          </div>
+          <span id="health-score-pill" class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-inner shadow-emerald-500/10">In attesa</span>
         </div>
-        <div class="grid grid-cols-3 gap-2 text-center text-[10px] text-slate-300">
-          <div class="bg-slate-900/60 rounded-xl p-2 border border-slate-800">
+        <div class="relative grid grid-cols-3 gap-2 text-center text-[10px] text-slate-300">
+          <div class="bg-slate-900/55 rounded-2xl p-2 border border-slate-700/80 shadow-inner shadow-slate-950/60">
             <div class="text-slate-400">Giornaliero</div>
             <div id="health-daily-status" class="mt-1 text-sm font-bold text-emerald-400">--</div>
           </div>
-          <div class="bg-slate-900/60 rounded-xl p-2 border border-slate-800">
+          <div class="bg-slate-900/55 rounded-2xl p-2 border border-slate-700/80 shadow-inner shadow-slate-950/60">
             <div class="text-slate-400">Settimanale</div>
             <div id="health-weekly-status" class="mt-1 text-sm font-bold text-cyan-400">--</div>
           </div>
-          <div class="bg-slate-900/60 rounded-xl p-2 border border-slate-800">
+          <div class="bg-slate-900/55 rounded-2xl p-2 border border-slate-700/80 shadow-inner shadow-slate-950/60">
             <div class="text-slate-400">Mensile</div>
             <div id="health-monthly-status" class="mt-1 text-sm font-bold text-violet-400">--</div>
           </div>
         </div>
-        <div id="health-insights" class="text-[11px] text-slate-300 bg-slate-900/40 rounded-xl border border-slate-800 p-3 leading-relaxed">
+        <div id="health-insights" class="relative text-[11px] text-slate-300 bg-slate-900/45 rounded-2xl border border-slate-700/70 p-3 leading-relaxed shadow-inner shadow-slate-950/40">
           Inserisci il tuo stato di sonno, stress e recupero per avere un quadro realistico della tua salute.
         </div>
       </div>
 
       <!-- Chart 1: Strength Progress / Overload -->
-      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-lg">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-[0_18px_35px_rgba(15,23,42,0.38)]">
         <div class="flex justify-between items-center">
-          <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center space-x-1.5">
             <i class="fa-solid fa-dumbbell text-cyan-400"></i>
             <span>Progresso Forza / Volume</span>
           </h3>
-          <select id="chart-exercise-select" class="bg-slate-900 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none" onchange="updateExerciseChart()">
+          <select id="chart-exercise-select" class="bg-slate-900/80 border border-slate-700 text-slate-200 text-xs rounded-xl px-2 py-1.5 focus:outline-none shadow-inner shadow-slate-950/60" onchange="updateExerciseChart()">
             <!-- Populated dynamically -->
           </select>
         </div>
-        <div class="relative h-48 w-full">
+        <div class="relative h-48 w-full rounded-2xl bg-slate-950/40 p-2 border border-slate-800/80">
           <canvas id="exerciseProgressChart"></canvas>
         </div>
       </div>
 
       <!-- Chart 2: Body Weight History -->
-      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-lg">
-        <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-[0_18px_35px_rgba(15,23,42,0.38)]">
+        <h3 class="text-xs font-bold text-slate-100 flex items-center space-x-1.5">
           <i class="fa-solid fa-weight-scale text-purple-400"></i>
           <span>Andamento Peso Corporeo (kg)</span>
         </h3>
-        <div class="relative h-48 w-full">
+        <div class="relative h-48 w-full rounded-2xl bg-slate-950/40 p-2 border border-slate-800/80">
           <canvas id="weightProgressChart"></canvas>
         </div>
       </div>
 
       <!-- Chart 3: Caloric & Macro intake vs Target -->
-      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-lg">
-        <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-[0_18px_35px_rgba(15,23,42,0.38)]">
+        <h3 class="text-xs font-bold text-slate-100 flex items-center space-x-1.5">
           <i class="fa-solid fa-fire text-amber-400"></i>
           <span>Apporto Calorico Ultimi 7 Giorni</span>
         </h3>
-        <div class="relative h-48 w-full">
+        <div class="relative h-48 w-full rounded-2xl bg-slate-950/40 p-2 border border-slate-800/80">
           <canvas id="nutritionProgressChart"></canvas>
         </div>
       </div>
 
-      <div class="bg-darkcard border border-darkborder rounded-2xl p-4 space-y-3 shadow-lg">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-[0_18px_35px_rgba(15,23,42,0.38)]">
         <div class="flex justify-between items-center gap-3">
-          <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center space-x-1.5">
             <i class="fa-solid fa-heart-pulse text-rose-400"></i>
             <span>Trend Stato Salute</span>
           </h3>
           <div class="flex gap-2 items-center">
-            <select id="wellness-metric-filter" onchange="updateWellnessTrendChart()" class="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] rounded-lg px-2 py-1.5 focus:outline-none">
+            <select id="wellness-metric-filter" onchange="updateWellnessTrendChart()" class="bg-slate-900/80 border border-slate-700 text-slate-200 text-[10px] rounded-xl px-2 py-1.5 focus:outline-none shadow-inner shadow-slate-950/60">
               <option value="sleep">Sonno</option>
               <option value="stress">Stress</option>
               <option value="recovery">Recupero</option>
               <option value="mood">Umore</option>
               <option value="readiness">Readiness</option>
             </select>
-            <select id="wellness-range-filter" onchange="updateWellnessTrendChart()" class="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] rounded-lg px-2 py-1.5 focus:outline-none">
+            <select id="wellness-range-filter" onchange="updateWellnessTrendChart()" class="bg-slate-900/80 border border-slate-700 text-slate-200 text-[10px] rounded-xl px-2 py-1.5 focus:outline-none shadow-inner shadow-slate-950/60">
               <option value="day">Giorno</option>
               <option value="week">Settimana</option>
               <option value="month">Mese</option>
@@ -874,7 +878,7 @@
             </select>
           </div>
         </div>
-        <div class="relative h-56 w-full">
+        <div class="relative h-56 w-full rounded-2xl bg-slate-950/40 p-2 border border-slate-800/80">
           <canvas id="wellnessTrendChart"></canvas>
         </div>
       </div>
@@ -1397,6 +1401,44 @@
           Aggiorna Obiettivi
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: HEALTH GUIDE -->
+  <div id="health-guide-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-darkcard border border-darkborder rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl max-h-[80vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-circle-info text-cyan-400"></i> Target OMS & best practice</h3>
+        <button onclick="closeModal('health-guide-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3 text-[11px] text-slate-300">
+        <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+          <div class="font-bold text-white mb-1">Sonno</div>
+          <div><span class="text-emerald-400">Target:</span> 7–9 ore / notte, ottimale circa 8 h.</div>
+          <div class="mt-1 text-slate-400">Perché: regola recupero, glicemia, stress, crescita muscolare e lucidità. Dormire meno di 7 h riduce riparazione cellulare e prestazioni.</div>
+        </div>
+        <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+          <div class="font-bold text-white mb-1">Stress</div>
+          <div><span class="text-amber-400">Target:</span> in media 3–5 / 10, mai costantemente oltre 6.</div>
+          <div class="mt-1 text-slate-400">Perché: stress elevato aumenta catabolismo, peggiora recupero, riduce motivazione e qualità del sonno.</div>
+        </div>
+        <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+          <div class="font-bold text-white mb-1">Recupero / readiness</div>
+          <div><span class="text-violet-400">Target:</span> recupero 6–8 / 10 e readiness 7–9 / 10.</div>
+          <div class="mt-1 text-slate-400">Perché: è il segnale più realistico di quanto il tuo corpo sia pronto per un allenamento intenso.</div>
+        </div>
+        <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+          <div class="font-bold text-white mb-1">Dieta</div>
+          <div><span class="text-cyan-400">Target:</span> coprire circa il 90–100% dei macros giornalieri: proteine, carboidrati, grassi, fibre, calcio, magnesio e zuccheri controllati.</div>
+          <div class="mt-1 text-slate-400">Perché: la dieta è il carburante del recupero e delle performance. Troppa o troppo poca energia compromette rendimento, recupero e composizione corporea.</div>
+        </div>
+        <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+          <div class="font-bold text-white mb-1">Allenamento</div>
+          <div><span class="text-rose-400">Target:</span> volume e carico progressivi, senza sovraccaricare il recupero.</div>
+          <div class="mt-1 text-slate-400">Perché: il corpo si adatta all’allenamento quando il carico cresce e il recupero resta adeguato; se non c’è recupero, aumenta rischio di sovrallenamento.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2588,6 +2630,8 @@
       const weeklyEntries = (appState.wellness || []).filter(item => last7.includes(item.date));
       const weeklySleep = weeklyEntries.length ? weeklyEntries.reduce((sum, item) => sum + (Number(item.sleepHours) || 0), 0) / weeklyEntries.length : 0;
       const weeklyStress = weeklyEntries.length ? weeklyEntries.reduce((sum, item) => sum + (Number(item.stress) || 0), 0) / weeklyEntries.length : 0;
+      const weeklyRecovery = weeklyEntries.length ? weeklyEntries.reduce((sum, item) => sum + (Number(item.recovery) || 0), 0) / weeklyEntries.length : 0;
+      const weeklyReadiness = weeklyEntries.length ? weeklyEntries.reduce((sum, item) => sum + (Number(item.readiness) || 0), 0) / weeklyEntries.length : 0;
       const dietScore = (() => {
         const target = appState.targets || {};
         const currentDate = document.getElementById('nutrition-date')?.value || today;
@@ -2607,21 +2651,23 @@
       const dailyStatus = todayEntry
         ? (todayEntry.sleepHours >= 7 && todayEntry.stress <= 6 && todayEntry.recovery >= 6 ? 'Buono' : 'Da migliorare')
         : 'In attesa';
-      const weeklyStatus = weeklySleep >= 7 && weeklyStress <= 6 ? 'Buono' : 'Da migliorare';
+      const weeklyStatus = weeklySleep >= 7 && weeklyStress <= 6 && weeklyRecovery >= 6 ? 'Buono' : 'Da migliorare';
 
       const monthStart = new Date();
       monthStart.setDate(1);
       const monthEntries = (appState.wellness || []).filter(item => new Date(item.date) >= monthStart);
       const monthlyAvgSleep = monthEntries.length ? monthEntries.reduce((sum, item) => sum + (Number(item.sleepHours) || 0), 0) / monthEntries.length : 0;
       const monthlyAvgStress = monthEntries.length ? monthEntries.reduce((sum, item) => sum + (Number(item.stress) || 0), 0) / monthEntries.length : 0;
-      const monthlyStatus = monthlyAvgSleep >= 7 && monthlyAvgStress <= 6 ? 'Buono' : 'Da migliorare';
+      const monthlyAvgRecovery = monthEntries.length ? monthEntries.reduce((sum, item) => sum + (Number(item.recovery) || 0), 0) / monthEntries.length : 0;
+      const monthlyStatus = monthlyAvgSleep >= 7 && monthlyAvgStress <= 6 && monthlyAvgRecovery >= 6 ? 'Buono' : 'Da migliorare';
 
       const insights = [
         `Riposo medio settimanale: ${weeklySleep ? weeklySleep.toFixed(1) : '--'} h`,
-        `Stress medio: ${weeklyStress ? weeklyStress.toFixed(1) : '--'} / 10`,
+        `Stress medio settimanale: ${weeklyStress ? weeklyStress.toFixed(1) : '--'} / 10`,
+        `Recupero medio settimanale: ${weeklyRecovery ? weeklyRecovery.toFixed(1) : '--'} / 10`,
         `Dieta odierna: ${dietScore}% rispetto al target`,
         `Volume odierno: ${currentVolume} kg`,
-        `Recupero mese: ${monthlyAvgSleep ? monthlyAvgSleep.toFixed(1) : '--'} h media` 
+        `Readiness media settimanale: ${weeklyReadiness ? weeklyReadiness.toFixed(1) : '--'} / 10`
       ];
 
       return {
@@ -2629,9 +2675,16 @@
         weeklyStatus,
         monthlyStatus,
         dailyScore: dailyStatus === 'Buono' ? 80 : 45,
-        weeklyScore: weeklySleep >= 7 && weeklyStress <= 6 ? 83 : 52,
-        monthlyScore: monthlyAvgSleep >= 7 && monthlyAvgStress <= 6 ? 81 : 52,
-        insights
+        weeklyScore: weeklySleep >= 7 && weeklyStress <= 6 && weeklyRecovery >= 6 ? 83 : 52,
+        monthlyScore: monthlyAvgSleep >= 7 && monthlyAvgStress <= 6 && monthlyAvgRecovery >= 6 ? 81 : 52,
+        insights,
+        weeklySleep,
+        weeklyStress,
+        weeklyRecovery,
+        weeklyReadiness,
+        monthAvgSleep: monthlyAvgSleep,
+        monthAvgStress: monthlyAvgStress,
+        monthAvgRecovery: monthlyAvgRecovery
       };
     }
 
@@ -3156,6 +3209,11 @@
         readiness: 'Readiness (1-10)'
       }[metric] || 'Valore';
 
+      const isSleep = metric === 'sleep';
+      const yConfig = isSleep
+        ? { min: 0, max: 12, ticks: { stepSize: 2, callback: (value) => `${value}h` } }
+        : { min: 0, max: 10, ticks: { stepSize: 2, callback: (value) => `${value}` } };
+
       if (chartWellness) chartWellness.destroy();
       chartWellness = new Chart(ctx, {
         type: 'line',
@@ -3177,7 +3235,16 @@
           plugins: { legend: { display: false } },
           scales: {
             x: { ticks: { color: '#64748b', font: { size: 10 } } },
-            y: { ticks: { color: '#64748b', font: { size: 10 } } }
+            y: {
+              min: yConfig.min,
+              max: yConfig.max,
+              ticks: {
+                color: '#64748b',
+                font: { size: 10 },
+                stepSize: yConfig.ticks.stepSize,
+                callback: yConfig.ticks.callback
+              }
+            }
           }
         }
       });
