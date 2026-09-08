@@ -272,6 +272,15 @@
         const appShell = document.getElementById('app-shell');
         if (welcomeScreen) welcomeScreen.classList.add('hidden');
         if (appShell) appShell.classList.remove('hidden');
+        try {
+          if (typeof renderAllViews === 'function') {
+            renderAllViews();
+          } else if (typeof renderPresets === 'function') {
+            renderPresets();
+          }
+        } catch (err) {
+          console.warn('Unlock view refresh failed:', err);
+        }
       }
 
       function onGoogleLoggedIn(response) {
@@ -1848,33 +1857,69 @@
       weeklyNutritionStatus: {}
     };
 
-    let appState = JSON.parse(localStorage.getItem('gymbro_data')) || DEFAULT_STATE;
-    const legacyFoodDb = localStorage.getItem('db_foods');
-    if (legacyFoodDb) {
-      try {
-        const parsedDb = JSON.parse(legacyFoodDb);
-        if (Array.isArray(parsedDb)) {
-          appState.presets = parsedDb;
-        } else if (parsedDb && typeof parsedDb === 'object') {
-          const migrated = Object.values(parsedDb)
-            .filter(item => item && typeof item === 'object' && item.name)
-            .map(item => ({ name: item.name, p: Number(item.p) || 0, c: Number(item.c) || 0, f: Number(item.f) || 0 }));
-          if (migrated.length) appState.presets = migrated;
-        }
-      } catch (err) {
-        console.warn('Legacy food DB parse failed:', err);
-      }
-    }
-    window.appState = appState;
-
-    function persistFoodDatabase() {
-      const normalized = (appState.presets || []).map(item => ({
+    function normalizePreset(item) {
+      if (!item || typeof item !== 'object' || !item.name) return null;
+      return {
         name: String(item.name || '').trim(),
         p: Number(item.p) || 0,
         c: Number(item.c) || 0,
-        f: Number(item.f) || 0
-      })).filter(item => item.name);
+        f: Number(item.f) || 0,
+        sugars: Number(item.sugars) || 0,
+        calcium: Number(item.calcium) || 0,
+        magnesium: Number(item.magnesium) || 0,
+        fiber: Number(item.fiber) || 0,
+        kcal: Number(item.kcal) || 0,
+        ts: item.ts || new Date().toISOString()
+      };
+    }
 
+    function hydrateFoodDatabaseFromStorage() {
+      const savedState = JSON.parse(localStorage.getItem('gymbro_data') || 'null');
+      const localDb = localStorage.getItem('db_foods');
+      const mergedPresets = [];
+
+      if (savedState && Array.isArray(savedState.presets) && savedState.presets.length) {
+        savedState.presets.forEach(item => {
+          const normalized = normalizePreset(item);
+          if (normalized) mergedPresets.push(normalized);
+        });
+      }
+
+      if (localDb) {
+        try {
+          const parsedDb = JSON.parse(localDb);
+          const incoming = Array.isArray(parsedDb) ? parsedDb : Object.values(parsedDb || {});
+          incoming.forEach(item => {
+            const normalized = normalizePreset(item);
+            if (!normalized) return;
+            const exists = mergedPresets.findIndex(entry => entry.name.toLowerCase() === normalized.name.toLowerCase());
+            if (exists >= 0) {
+              mergedPresets[exists] = { ...mergedPresets[exists], ...normalized };
+            } else {
+              mergedPresets.push(normalized);
+            }
+          });
+        } catch (err) {
+          console.warn('Food DB hydrate failed:', err);
+        }
+      }
+
+      if (!mergedPresets.length) {
+        DEFAULT_STATE.presets.forEach(item => {
+          const normalized = normalizePreset(item);
+          if (normalized) mergedPresets.push(normalized);
+        });
+      }
+
+      return mergedPresets.filter(item => item.name);
+    }
+
+    let appState = JSON.parse(localStorage.getItem('gymbro_data')) || DEFAULT_STATE;
+    appState.presets = hydrateFoodDatabaseFromStorage();
+    window.appState = appState;
+
+    function persistFoodDatabase() {
+      const normalized = (appState.presets || []).map(item => normalizePreset(item)).filter(Boolean);
       appState.presets = normalized;
       localStorage.setItem('db_foods', JSON.stringify(normalized));
       localStorage.setItem('gymbro_data', JSON.stringify(appState));
@@ -2882,13 +2927,22 @@
       }
 
       appState.presets.forEach((p, idx) => {
-        // Render List item in modal
+        const macroText = [
+          `P: ${Number(p.p || 0).toFixed(1)}g`,
+          `C: ${Number(p.c || 0).toFixed(1)}g`,
+          `G: ${Number(p.f || 0).toFixed(1)}g`,
+          `Z: ${Number(p.sugars || 0).toFixed(1)}g`,
+          `Ca: ${Number(p.calcium || 0).toFixed(0)}mg`,
+          `Mg: ${Number(p.magnesium || 0).toFixed(0)}mg`,
+          `Fib: ${Number(p.fiber || 0).toFixed(1)}g`
+        ].join(' | ');
+
         const item = document.createElement('div');
         item.className = "flex justify-between items-center bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs";
         item.innerHTML = `
           <div>
             <div class="font-bold text-slate-200">${p.name}</div>
-            <div class="text-[10px] text-slate-400">Per 100g: P: ${p.p}g | C: ${p.c}g | G: ${p.f}g</div>
+            <div class="text-[10px] text-slate-400">Per 100g: ${macroText}</div>
           </div>
           <button onclick="deletePreset(${idx})" class="text-slate-600 hover:text-red-400 text-xs p-1">
             <i class="fa-solid fa-trash"></i>
@@ -2896,10 +2950,9 @@
         `;
         list.appendChild(item);
 
-        // Populate dropdown options
         const opt = document.createElement('option');
         opt.value = idx;
-        opt.textContent = `${p.name} (P:${p.p} C:${p.c} G:${p.f})`;
+        opt.textContent = `${p.name} (P:${Number(p.p || 0).toFixed(1)} C:${Number(p.c || 0).toFixed(1)} G:${Number(p.f || 0).toFixed(1)})`;
         select.appendChild(opt);
       });
     }
@@ -3578,18 +3631,8 @@ function handleAuthClick() {
     if (btn) { btn.innerText = 'Disconnetti'; btn.onclick = handleSignoutClick; }
     const driveActions = document.getElementById('drive-actions');
     if (driveActions) driveActions.style.display = 'flex';
-    unlockApp();
-    closeModal('cloud-modal');
-    // Keep the app in the main view; the user can open cloud actions intentionally from the cloud button.
-    try { await caricaDaDrive(); } catch(e) { console.warn('Auto-load backups failed', e); }
-  };
-
-    if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({ prompt: 'consent' });
-    } else {
-        tokenClient.requestAccessToken({ prompt: '' });
-    }
-}
+    appState.presets = hydrateFoodDatabaseFromStorage();
+    renderPresets();
 
 // 4. Gestione Logout
 function handleSignoutClick() {
