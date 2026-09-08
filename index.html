@@ -266,6 +266,8 @@
 
       // Set your Google OAuth Client ID here
       const GOOGLE_CLIENT_ID = '263498749634-kcdn25mabgrfiiebkju084d2eclkrve5.apps.googleusercontent.com';
+      window.gapiInited = false;
+      window.gisInited = false;
 
       function unlockApp() {
         const welcomeScreen = document.getElementById('welcome-screen');
@@ -356,27 +358,35 @@
       }
 
       function enterApp() {
-        if (typeof loginHandler === 'function') {
-          loginHandler();
-          return;
+        const googleReady = !!(window.google && window.google.accounts && GOOGLE_CLIENT_ID);
+        const driveReady = !!(window.gapiInited && window.gisInited);
+
+        try {
+          if (typeof loginHandler === 'function' && (driveReady || googleReady)) {
+            loginHandler();
+          } else if (driveReady && typeof handleAuthClick === 'function') {
+            handleAuthClick();
+          } else if (ensureGoogleIdentityReady()) {
+            google.accounts.id.prompt();
+          } else if (typeof loginWithGoogle === 'function') {
+            const hasAuth = !!(window.firebaseApp || window.auth || localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token'));
+            if (hasAuth) {
+              loginWithGoogle();
+            }
+          }
+        } catch (err) {
+          console.warn('Google enter flow failed, falling back to local access:', err);
         }
 
-        if (gapiInited && gisInited && typeof handleAuthClick === 'function') {
-          handleAuthClick();
-          return;
+        unlockApp();
+        const hasSavedGoogle = !!(localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token'));
+        if (hasSavedGoogle) {
+          showToast('Accesso Google trovato: app aperta', 'success');
+        } else if (googleReady || driveReady) {
+          showToast('Tentativo Google avviato', 'info');
+        } else {
+          showToast('Google non disponibile: accesso locale attivo', 'info');
         }
-
-        if (ensureGoogleIdentityReady()) {
-          google.accounts.id.prompt();
-          return;
-        }
-
-        if (typeof loginWithGoogle === 'function') {
-          loginWithGoogle();
-          return;
-        }
-
-        showToast('Google non pronto: riprova più tardi', 'error');
       }
 
       function triggerGoogleSignIn() {
@@ -384,6 +394,10 @@
       }
 
       function refreshAuthUIFromStorage() {
+        if (typeof updateAuthUI !== 'function') {
+          return;
+        }
+
         const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
         if (!saved) {
           updateAuthUI(null);
@@ -3041,17 +3055,29 @@
 
     function loadProfileUI() {
       const p = appState.profile;
-      document.getElementById('prof-gender').textContent = p.gender === 'male' ? 'Uomo' : 'Donna';
-      document.getElementById('prof-age').textContent = `${p.age} anni`;
-      document.getElementById('prof-height').textContent = `${p.height} cm`;
-      document.getElementById('prof-sleep').textContent = `${p.sleepHours || 7} h`;
-      document.getElementById('prof-lifestyle').textContent = p.lifestyle || 'moderato';
+      const profGender = document.getElementById('prof-gender');
+      const profAge = document.getElementById('prof-age');
+      const profHeight = document.getElementById('prof-height');
+      const profSleep = document.getElementById('prof-sleep');
+      const profLifestyle = document.getElementById('prof-lifestyle');
 
-      document.getElementById('prof-input-gender').value = p.gender;
-      document.getElementById('prof-input-age').value = p.age;
-      document.getElementById('prof-input-height').value = p.height;
-      document.getElementById('prof-input-sleep').value = p.sleepHours || 7;
-      document.getElementById('prof-input-lifestyle').value = p.lifestyle || 'moderato';
+      if (profGender) profGender.textContent = p.gender === 'male' ? 'Uomo' : 'Donna';
+      if (profAge) profAge.textContent = `${p.age} anni`;
+      if (profHeight) profHeight.textContent = `${p.height} cm`;
+      if (profSleep) profSleep.textContent = `${p.sleepHours || 7} h`;
+      if (profLifestyle) profLifestyle.textContent = p.lifestyle || 'moderato';
+
+      const profInputGender = document.getElementById('prof-input-gender');
+      const profInputAge = document.getElementById('prof-input-age');
+      const profInputHeight = document.getElementById('prof-input-height');
+      const profInputSleep = document.getElementById('prof-input-sleep');
+      const profInputLifestyle = document.getElementById('prof-input-lifestyle');
+
+      if (profInputGender) profInputGender.value = p.gender;
+      if (profInputAge) profInputAge.value = p.age;
+      if (profInputHeight) profInputHeight.value = p.height;
+      if (profInputSleep) profInputSleep.value = p.sleepHours || 7;
+      if (profInputLifestyle) profInputLifestyle.value = p.lifestyle || 'moderato';
     }
 
     function saveBodyLog(e) {
@@ -3537,6 +3563,8 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 let tokenClient;
 let gapiInited = false;
 let gisInited = false;
+window.gapiInited = false;
+window.gisInited = false;
 
 // 1. Inizializzazione GAPI
 function gapiLoaded() {
@@ -3548,6 +3576,7 @@ async function initializeGapiClient() {
       await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
       await gapi.client.load('drive', 'v3');
       gapiInited = true;
+      window.gapiInited = true;
       maybeEnableButtons();
     } catch (err) {
       console.error('GAPI init failed:', err);
@@ -3563,6 +3592,7 @@ function gisLoaded() {
         callback: '',
     });
     gisInited = true;
+    window.gisInited = true;
     maybeEnableButtons();
 }
 
@@ -3581,8 +3611,9 @@ function requestGoogleAccessOnStartup() {
 
   // Unified login handler used by header button
   function loginHandler() {
+    const driveReady = !!(window.gapiInited && window.gisInited);
     // Prefer Drive OAuth flow when GAPI/GIS initialized
-    if (gapiInited && gisInited) {
+    if (driveReady) {
       handleAuthClick();
       return;
     }
