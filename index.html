@@ -3647,14 +3647,23 @@ function handleAuthClick() {
       showOAuthBlockedInfo(resp);
       return;
     }
+
     document.getElementById('auth-status').innerText = 'Stato: Connesso a Google Drive ✅';
     document.getElementById('auth-status').style.color = 'green';
+
     const btn = document.getElementById('google-login-btn');
     if (btn) { btn.innerText = 'Disconnetti'; btn.onclick = handleSignoutClick; }
+
     const driveActions = document.getElementById('drive-actions');
     if (driveActions) driveActions.style.display = 'flex';
+
     appState.presets = hydrateFoodDatabaseFromStorage();
     renderPresets();
+    openModal('cloud-modal');
+  };
+
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
 
 // 4. Gestione Logout
 function handleSignoutClick() {
@@ -3974,7 +3983,7 @@ function showBarcodeReadFeedback(code = '') {
   }, 1500);
 }
 
-async function toggleBarcodeFlash() {
+window.toggleBarcodeFlash = async function toggleBarcodeFlash() {
   const flashBtn = document.getElementById('flash-camera-btn');
   if (!barcodeCameraStream) {
     showToast('Apri prima la fotocamera');
@@ -4046,7 +4055,7 @@ function handleBarcodeScanResult(text) {
   }
 }
 
-function startBarcodeReaderLoop() {
+window.startBarcodeReaderLoop = function startBarcodeReaderLoop() {
   const video = document.getElementById('barcode-video');
   if (!video || !barcodeCameraStream || !barcodeScanActive) return;
 
@@ -4102,7 +4111,7 @@ function startBarcodeReaderLoop() {
   }
 }
 
-async function startBarcodeCamera() {
+window.startBarcodeCamera = async function startBarcodeCamera() {
   const video = document.getElementById('barcode-video');
   const emptyState = document.getElementById('barcode-camera-empty');
   const startBtn = document.getElementById('start-camera-btn');
@@ -4180,7 +4189,7 @@ async function startBarcodeCamera() {
   }
 }
 
-function stopBarcodeCamera() {
+window.stopBarcodeCamera = function stopBarcodeCamera() {
   const video = document.getElementById('barcode-video');
   const emptyState = document.getElementById('barcode-camera-empty');
   const startBtn = document.getElementById('start-camera-btn');
@@ -4234,7 +4243,7 @@ function stopBarcodeCamera() {
   }
 }
 
-function openScanProductModal() {
+window.openScanProductModal = function openScanProductModal() {
   const modal = document.getElementById('scan-product-modal');
   const input = document.getElementById('barcode-input');
   if (modal) modal.classList.remove('hidden');
@@ -4243,16 +4252,16 @@ function openScanProductModal() {
     setTimeout(() => input.focus(), 80);
   }
   stopBarcodeCamera();
-}
+};
 
-function closeScanProductModal() {
+window.closeScanProductModal = function closeScanProductModal() {
   const modal = document.getElementById('scan-product-modal');
   if (modal) modal.classList.add('hidden');
   updateModalScrollLock();
   stopBarcodeCamera();
-}
+};
 
-async function fetchOpenFoodFactsProduct(barcode) {
+window.fetchOpenFoodFactsProduct = async function fetchOpenFoodFactsProduct(barcode) {
   const cleanCode = normalizeBarcodeValue(barcode);
   if (!cleanCode || cleanCode.length < 8) {
     return null;
@@ -4285,7 +4294,7 @@ async function fetchOpenFoodFactsProduct(barcode) {
   return null;
 }
 
-async function submitBarcodeLookup() {
+window.submitBarcodeLookup = async function submitBarcodeLookup() {
   const input = document.getElementById('barcode-input');
   const barcode = normalizeBarcodeValue(input ? input.value : '');
   if (!barcode || barcode.length < 8) {
@@ -4320,11 +4329,11 @@ async function submitBarcodeLookup() {
   }
 }
 
-async function scanFoodByBarcode() {
+window.scanFoodByBarcode = async function scanFoodByBarcode() {
   openScanProductModal();
-}
+};
 
-function openNutritionProposalModal(data, dataUrl) {
+window.openNutritionProposalModal = function openNutritionProposalModal(data, dataUrl) {
   const sourceEl = document.getElementById('recognize-source');
   const modal = document.getElementById('nutrition-proposal-modal');
   const nameInput = document.getElementById('prop-name');
